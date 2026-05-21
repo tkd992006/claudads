@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>User ↔ Advertiser 관계도 + DB 수정 가이드</title>
+<style>
+  :root {
+    --bg: #0b0f17;
+    --panel: #121826;
+    --line: #2a3346;
+    --text: #e6edf6;
+    --muted: #8b97ab;
+    --accent: #5aa8ff;
+    --warn: #f5a25d;
+    --ok: #6fdca7;
+    --code-bg: #0a0d14;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px;
+    font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text);
+  }
+  h1 { font-size: 22px; margin: 0 0 24px; }
+  h2 { font-size: 16px; margin: 32px 0 12px; color: var(--accent); border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+  h3 { font-size: 14px; margin: 16px 0 8px; color: var(--warn); }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 12.5px; font-family: ui-monospace, monospace; }
+  pre {
+    background: var(--code-bg); padding: 14px 16px; border-radius: 8px;
+    border: 1px solid var(--line); overflow-x: auto; font-size: 12.5px;
+    font-family: ui-monospace, monospace; margin: 8px 0 14px;
+  }
+  .diagram {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 16px 0 24px;
+  }
+  .node {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .node h4 { margin: 0 0 8px; color: var(--accent); font-size: 13.5px; }
+  .node .key { color: var(--warn); }
+  .node .rel { color: var(--ok); font-size: 12px; }
+  .node ul { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--muted); }
+  .arrow { text-align: center; color: var(--muted); font-size: 11px; padding-top: 36px; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--panel); color: var(--accent); }
+  .muted { color: var(--muted); }
+  .warn { color: var(--warn); }
+  .ok { color: var(--ok); }
+</style>
+</head>
+<body>
+
+<h1>User ↔ Advertiser 데이터 관계도</h1>
+
+<h2>관계 요약 (한 줄)</h2>
+<p>
+  <strong>User</strong> 1 ↔ 0..1 <strong>AdvertiserAccount</strong> 1 ↔ N <strong>Ad</strong>.
+  즉, 한 유저는 광고주 계정을 <em>0개 또는 1개</em>만 가질 수 있고, 광고주 계정 하나는 여러 광고를 가질 수 있음.
+</p>
+
+<div class="diagram">
+  <div class="node">
+    <h4>User</h4>
+    <div class="rel">테이블: <code>"User"</code></div>
+    <ul>
+      <li><span class="key">id</span> (PK, cuid)</li>
+      <li>githubId (unique)</li>
+      <li>login, email, avatarUrl</li>
+      <li>role: <code>VIEWER</code> | <code>ADMIN</code></li>
+      <li>banned</li>
+    </ul>
+  </div>
+  <div class="arrow">── 1:0..1 ──▶<br/><span class="muted">User.id = AdvertiserAccount.userId</span></div>
+  <div class="node">
+    <h4>AdvertiserAccount</h4>
+    <div class="rel">테이블: <code>"AdvertiserAccount"</code></div>
+    <ul>
+      <li><span class="key">id</span> (PK, cuid)</li>
+      <li><span class="key">userId</span> (unique → User.id)</li>
+      <li>name</li>
+      <li>balanceCents <span class="muted">(잔액, 충전식)</span></li>
+    </ul>
+  </div>
+</div>
+
+<div class="diagram">
+  <div class="node">
+    <h4>AdvertiserAccount</h4>
+    <div class="rel">위와 동일</div>
+  </div>
+  <div class="arrow">── 1:N ──▶<br/><span class="muted">AdvertiserAccount.id = Ad.advertiserId</span></div>
+  <div class="node">
+    <h4>Ad</h4>
+    <div class="rel">테이블: <code>"Ad"</code></div>
+    <ul>
+      <li><span class="key">id</span> (PK)</li>
+      <li><span class="key">advertiserId</span> (FK)</li>
+      <li>title, videoKey, durationSec</li>
+      <li>cpmCents, budgetCapCents, spentCents</li>
+      <li>status: <code>PENDING/APPROVED/REJECTED/PAUSED/EXHAUSTED</code></li>
+    </ul>
+  </div>
+</div>
+
+<h3>핵심 흐름</h3>
+<ol>
+  <li>GitHub OAuth로 로그인하면 <code>User</code> 행이 생김 (<code>web/lib/auth.ts:25</code> upsert).</li>
+  <li>유저가 <code>/advertiser</code>에서 “광고주 계정 만들기” 클릭 → <code>POST /api/advertiser/account</code>가 <code>AdvertiserAccount</code> 생성 (<code>web/app/api/advertiser/account/route.ts</code>).</li>
+  <li><code>/advertiser/billing</code>에서 잔액 충전 → <code>balanceCents</code> 증가.</li>
+  <li><code>/advertiser/ads/new</code>에서 광고 등록 → <code>Ad</code> 생성, 상태 <code>PENDING</code>.</li>
+  <li>관리자(<code>/admin/ads</code>)가 검수 → <code>APPROVED</code> / <code>REJECTED</code>.</li>
+</ol>
+
+<h3>중요한 제약</h3>
+<ul>
+  <li><code>AdvertiserAccount.userId</code>가 <strong>UNIQUE</strong>이므로 한 유저가 광고주 계정을 두 개 만들 수 없음.</li>
+  <li><code>User.role</code>은 광고주 자격과 무관 — ADMIN이 아닌 일반 VIEWER도 광고주 계정을 만들 수 있음.</li>
+  <li>광고주 계정 삭제 전에 <code>Ad</code> 행들을 먼저 정리해야 함 (FK 때문).</li>
+</ul>
+
+<h2>DB 수정하는 법</h2>
+
+<h3>1) 접속 정보 (현재 프로젝트)</h3>
+<table>
+  <tr><th>항목</th><th>값</th></tr>
+  <tr><td>DB</td><td>PostgreSQL 16</td></tr>
+  <tr><td>호스트</td><td>localhost</td></tr>
+  <tr><td>포트</td><td>5432 <span class="muted">(.env.local의 DATABASE_URL 기준 — docker-compose는 5433이라 둘 중 한 곳이 실제 사용중)</span></td></tr>
+  <tr><td>DB 이름</td><td>flaude <span class="muted">(.env.local 기준; docker-compose 기본값은 claude_ad)</span></td></tr>
+  <tr><td>사용자</td><td>postgres / postgres</td></tr>
+</table>
+
+<h3>2) Prisma Studio (가장 쉬움, GUI)</h3>
+<pre>cd /Users/jotsanghwa/flaude-2
+npx prisma studio --schema=prisma/schema.prisma</pre>
+<p>브라우저에서 <code>http://localhost:5555</code> 열림. 표 형태로 행 추가/수정/삭제 가능. <span class="warn">FK 제약과 unique는 알아서 막아줌.</span></p>
+
+<h3>3) psql (터미널)</h3>
+<pre># 접속
+psql "postgres://postgres:postgres@localhost:5432/flaude"
+
+# 전체 유저 + 광고주 계정 조인 조회
+SELECT u.login, u.role, a.name AS advertiser_name, a."balanceCents"
+FROM "User" u
+LEFT JOIN "AdvertiserAccount" a ON a."userId" = u.id
+ORDER BY u."createdAt" DESC;
+
+# 잔액 충전 (수동, cents 단위)
+UPDATE "AdvertiserAccount"
+SET "balanceCents" = "balanceCents" + 1000000  -- $10,000.00
+WHERE "userId" = (SELECT id FROM "User" WHERE login = 'tkd992006');
+
+# 광고를 강제 APPROVED 로
+UPDATE "Ad" SET status = 'APPROVED' WHERE id = '광고id';
+
+# 유저에게 ADMIN 역할 직접 부여
+UPDATE "User" SET role = 'ADMIN' WHERE login = 'tkd992006';
+
+# 광고주 계정 삭제 (먼저 Ad들 지워야 함)
+DELETE FROM "Ad" WHERE "advertiserId" = (
+  SELECT id FROM "AdvertiserAccount" WHERE "userId" = '유저id'
+);
+DELETE FROM "AdvertiserAccount" WHERE "userId" = '유저id';</pre>
+
+<p class="warn">⚠️ PostgreSQL은 식별자 대소문자 보존을 위해 <code>"User"</code>, <code>"AdvertiserAccount"</code>처럼 큰따옴표 필수. <code>balanceCents</code>, <code>userId</code> 같은 컬럼도 큰따옴표로 감싸야 함.</p>
+
+<h3>4) 스키마 자체를 바꿀 때 (필드 추가/삭제)</h3>
+<pre># 1. prisma/schema.prisma 편집
+# 2. 마이그레이션 생성 + 적용
+cd /Users/jotsanghwa/flaude-2
+npx prisma migrate dev --name describe_your_change
+
+# 3. Prisma Client 재생성 (보통 자동이지만 수동도 가능)
+npx prisma generate</pre>
+<p>운영DB라면 <code>migrate deploy</code>를 쓰고, 절대 <code>migrate reset</code>은 쓰지 말 것 (전체 데이터 삭제됨).</p>
+
+<h3>5) 자주 쓰는 시나리오 모음</h3>
+<table>
+  <tr><th>하고 싶은 일</th><th>방법</th></tr>
+  <tr><td>특정 유저를 ADMIN으로 만들기</td><td>① <code>ADMIN_GITHUB_LOGINS</code>에 login 추가 + 재로그인 / 또는 ② psql로 <code>UPDATE "User" SET role='ADMIN'</code></td></tr>
+  <tr><td>광고주 잔액 충전</td><td>UI: <code>/advertiser/billing</code> 또는 psql <code>UPDATE "AdvertiserAccount"</code></td></tr>
+  <tr><td>등록한 광고 강제 승인</td><td>관리자 로그인 후 <code>/admin/ads</code>의 승인 버튼 / 또는 psql <code>UPDATE "Ad" SET status='APPROVED'</code></td></tr>
+  <tr><td>광고주 계정 한 명에서 다른 유저로 이전</td><td>psql: <code>UPDATE "AdvertiserAccount" SET "userId"=NEW_ID WHERE "userId"=OLD_ID</code> (NEW_ID에 광고주 계정 없어야 함)</td></tr>
+  <tr><td>전체 광고 데이터 초기화</td><td>psql: <code>DELETE FROM "Impression"; DELETE FROM "Ad";</code> (FK 순서 주의)</td></tr>
+</table>
+
+</body>
+</html>

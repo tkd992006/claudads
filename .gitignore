@@ -1,0 +1,11 @@
+node_modules
+.next
+dist
+out
+*.log
+.env*
+!.env.example
+.DS_Store
+desktop/release
+prisma/migrations/dev.db*
+.dev-logs

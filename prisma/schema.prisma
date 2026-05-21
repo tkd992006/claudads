@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VIEWER
+  ADMIN
+}
+
+enum AdStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAUSED
+  EXHAUSTED
+}
+
+enum CtaType {
+  LINK
+  PROMPT_INJECTION
+}
+
+enum LedgerReason {
+  IMPRESSION
+  CTA
+  REFERRAL
+  WITHDRAWAL
+  ADJUSTMENT
+}
+
+enum WithdrawalStatus {
+  REQUESTED
+  APPROVED
+  PAID
+  REJECTED
+}
+
+model User {
+  id          String   @id @default(cuid())
+  githubId    String   @unique
+  login       String
+  email       String?
+  avatarUrl   String?
+  role        Role     @default(VIEWER)
+  banned      Boolean  @default(false)
+  inviterId   String?
+  createdAt   DateTime @default(now())
+
+  advertiser   AdvertiserAccount?
+  ledger       TokenLedger[]
+  impressions  Impression[]
+  withdrawals  Withdrawal[]
+  sessions     DeviceSession[]
+  referralsOut Referral[]         @relation("inviter")
+  referralsIn  Referral[]         @relation("invitee")
+}
+
+model AdvertiserAccount {
+  id           String @id @default(cuid())
+  userId       String @unique
+  user         User   @relation(fields: [userId], references: [id])
+  name         String
+  balanceCents Int    @default(0)
+  ads          Ad[]
+}
+
+model Ad {
+  id                  String   @id @default(cuid())
+  advertiserId        String
+  advertiser          AdvertiserAccount @relation(fields: [advertiserId], references: [id])
+  title               String
+  videoKey            String
+  durationSec         Int
+  ctaLabel            String?
+  ctaUrl              String?
+  ctaType             CtaType  @default(LINK)
+  ctaPrompt           String?
+  cpmCents            Int
+  budgetCapCents      Int
+  spentCents          Int      @default(0)
+  impressionsCount    Int      @default(0)
+  dailyCapImpressions Int?
+  scheduleStart       DateTime?
+  scheduleEnd         DateTime?
+  status              AdStatus @default(PENDING)
+  createdAt           DateTime @default(now())
+
+  impressions Impression[]
+
+  @@index([status])
+  @@index([advertiserId])
+}
+
+model Impression {
+  id           String    @id @default(cuid())
+  adId         String
+  userId       String
+  ad           Ad        @relation(fields: [adId], references: [id])
+  user         User      @relation(fields: [userId], references: [id])
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  ctaClickedAt DateTime?
+  deviceId     String
+  ipHash       String
+
+  @@index([userId, startedAt])
+  @@index([adId, startedAt])
+}
+
+model TokenLedger {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id])
+  deltaMicro BigInt
+  reason     LedgerReason
+  refId      String?
+  createdAt  DateTime     @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Withdrawal {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id])
+  amountMicro BigInt
+  status      WithdrawalStatus @default(REQUESTED)
+  destination String
+  createdAt   DateTime         @default(now())
+  paidAt      DateTime?
+}
+
+model Referral {
+  id        String   @id @default(cuid())
+  inviterId String
+  inviteeId String   @unique
+  inviter   User     @relation("inviter", fields: [inviterId], references: [id])
+  invitee   User     @relation("invitee", fields: [inviteeId], references: [id])
+  granted   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// Device flow sessions for the Electron app
+model DeviceSession {
+  id         String   @id @default(cuid())
+  deviceCode String   @unique
+  userCode   String   @unique
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  token      String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([userCode])
+}

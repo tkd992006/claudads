@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>Claude Ad — 광고 노출 알고리즘</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      :root {
+        --bg: #0a0c10;
+        --panel: #11141a;
+        --panel-2: #161a22;
+        --line: #1f2630;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --dim: #6b7280;
+        --accent: #10b981;
+        --accent-2: #34d399;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+        --code-bg: #0d1017;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        background: radial-gradient(1200px 800px at 20% -10%, #14253a 0%, var(--bg) 55%) fixed;
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Inter", "Pretendard",
+          ui-sans-serif, system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      a { color: var(--accent-2); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .wrap {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 56px 28px 96px;
+      }
+      header { margin-bottom: 36px; }
+      .eyebrow {
+        font-size: 11.5px;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: var(--accent-2);
+        font-weight: 600;
+      }
+      h1 {
+        font-size: 32px;
+        margin: 6px 0 8px;
+        letter-spacing: -0.02em;
+      }
+      .sub { color: var(--muted); font-size: 15px; }
+      h2 {
+        font-size: 20px;
+        margin: 36px 0 14px;
+        letter-spacing: -0.01em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      h2 .num {
+        display: inline-flex;
+        width: 26px;
+        height: 26px;
+        align-items: center;
+        justify-content: center;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--accent-2);
+        font-weight: 600;
+      }
+      h3 { font-size: 16px; margin: 22px 0 8px; }
+      p { color: #d1d5db; }
+      code {
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-size: 12.5px;
+        background: var(--code-bg);
+        padding: 2px 6px;
+        border-radius: 5px;
+        border: 1px solid var(--line);
+        color: #e2e8f0;
+      }
+      pre {
+        background: var(--code-bg);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        font-size: 12.5px;
+        line-height: 1.55;
+        margin: 12px 0;
+      }
+      pre code {
+        background: transparent;
+        border: 0;
+        padding: 0;
+        font-size: inherit;
+      }
+      .filter-card {
+        background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px 20px;
+        margin: 12px 0;
+      }
+      .filter-card .head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 6px;
+      }
+      .pill {
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+      }
+      .pill.db { color: #93c5fd; border-color: rgba(147,197,253,0.3); background: rgba(147,197,253,0.05); }
+      .pill.js { color: #fcd34d; border-color: rgba(252,211,77,0.3); background: rgba(252,211,77,0.05); }
+      .filter-card .title { font-weight: 600; font-size: 15.5px; }
+      .filter-card .why { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+      .filter-card .ref { color: var(--dim); font-size: 12px; margin-top: 8px; font-family: ui-monospace, Menlo, monospace; }
+
+      .callout {
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin: 18px 0;
+        border: 1px solid;
+      }
+      .callout.warn {
+        background: rgba(245, 158, 11, 0.06);
+        border-color: rgba(245, 158, 11, 0.3);
+      }
+      .callout.bad {
+        background: rgba(239, 68, 68, 0.06);
+        border-color: rgba(239, 68, 68, 0.3);
+      }
+      .callout.ok {
+        background: rgba(16, 185, 129, 0.06);
+        border-color: rgba(16, 185, 129, 0.3);
+      }
+      .callout .label {
+        font-size: 11px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .callout.warn .label { color: var(--warn); }
+      .callout.bad .label { color: var(--bad); }
+      .callout.ok .label { color: var(--accent-2); }
+      .callout p:last-child { margin-bottom: 0; }
+
+      .flow {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 14px 0 4px;
+      }
+      .flow .step {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 14px;
+      }
+      .flow .step .n {
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--accent-2);
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .flow .arrow {
+        margin-left: 11px;
+        color: var(--dim);
+        font-size: 12px;
+      }
+      .kbd {
+        font-family: ui-monospace, Menlo, monospace;
+        font-size: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 2px 6px;
+        color: #e5e7eb;
+      }
+      hr.sep {
+        border: 0;
+        border-top: 1px solid var(--line);
+        margin: 36px 0 8px;
+      }
+      .meta {
+        color: var(--dim);
+        font-size: 12.5px;
+        margin-top: 28px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="eyebrow">Claude Ad · Internal</div>
+        <h1>광고 노출 알고리즘</h1>
+        <p class="sub">
+          데스크탑이 <code>/api/ads/serve</code> 를 때리면,
+          서버는 <code>selectAdForUser(userId)</code> 로 후보를 추리고 가중치
+          랜덤으로 하나를 골라 임프레션 레코드를 만든 뒤 응답합니다.
+          전체 로직은 <code>web/lib/ads.ts:17-62</code> 한 함수에 들어있습니다.
+        </p>
+      </header>
+
+      <div class="callout warn">
+        <div class="label">왜 "표시할 광고가 없습니다" 가 뜨는가</div>
+        <p>
+          한 번 사용자에게 노출된 광고는 <strong>24시간 동안 동일 사용자에게
+          다시 안 뜹니다</strong> (primary 티어 한정). 후보 쿼리의
+          <code>impressions: { none: { userId, startedAt: { gte: 24h전 } } }</code>
+          조건이 이 dedup 을 강제하기 때문입니다. 게다가 <em>완료 여부와 무관</em>
+          하게 <code>startedAt</code> 만 보기 때문에, 영상을 끝까지 안 봐도
+          (=토큰 적립 X) 그 광고는 24시간 잠깁니다.
+        </p>
+        <p>
+          단, primary 가 비면 <a href="#fallback">fallback 티어</a> 가
+          24h dedup 을 풀고 같은 풀을 LRU 기반으로 다시 회전시킵니다.
+          따라서 "광고 없음" 빈 응답은 사실상 <em>전체 풀이 비었거나
+          예산/스케줄이 모두 막혔을 때만</em> 발생합니다.
+        </p>
+      </div>
+
+      <h2><span class="num">1</span> 전체 흐름 한 줄 요약</h2>
+      <div class="flow">
+        <div class="step"><span class="n">A</span> Primary 후보 1차 필터 (Prisma where, 24h dedup 포함)</div>
+        <div class="step"><span class="n">B</span> 2차 필터 (JS 루프: 예산/일캡)</div>
+        <div class="step"><span class="n">C</span> 잔여 예산 × 지터 가중치 랜덤 선택</div>
+        <div class="step"><span class="n">D</span> Primary 가 비면 <strong>Fallback 티어</strong> (24h dedup 해제, LRU 가중치)</div>
+        <div class="step"><span class="n">E</span> <code>Impression</code> 행 생성, 영상 signed URL 반환 (<code>isFallback</code> 플래그 포함)</div>
+      </div>
+
+      <h2><span class="num">2</span> 1차 필터 — DB <code>where</code></h2>
+      <p>아래 4가지를 <strong>모두</strong> 만족해야 후보가 됩니다.</p>
+
+      <div class="filter-card">
+        <div class="head">
+          <span class="pill db">DB</span>
+          <span class="title">① 승인 상태</span>
+        </div>
+        <div>광고가 <code>status === "APPROVED"</code> 여야 합니다. admin 검수 통과 전엔 절대 안 노출.</div>
+        <div class="ref">web/lib/ads.ts:28</div>
+      </div>
+
+      <div class="filter-card">
+        <div class="head">
+          <span class="pill db">DB</span>
+          <span class="title">② 스케줄 윈도우</span>
+        </div>
+        <div>
+          <code>scheduleStart</code> 가 null 이거나 현재시각 이전이고,
+          <code>scheduleEnd</code> 가 null 이거나 현재시각 이후여야 합니다.
+          광고주가 시작/종료 시점을 안 정해두면 항상 통과.
+        </div>
+        <div class="ref">web/lib/ads.ts:29-32</div>
+      </div>
+
+      <div class="filter-card">
+        <div class="head">
+          <span class="pill db">DB</span>
+          <span class="title">③ 사용자 24h dedup ← 핵심</span>
+        </div>
+        <div>
+          현재 <code>userId</code> 가 이 광고에 대해 <em>최근 24시간 안에
+          시작한 Impression 이 0건</em>이어야 합니다.
+          <code>completedAt</code> 은 안 봅니다 — 시작만 되어 있으면 잠겨요.
+        </div>
+        <pre><code>impressions: { none: { userId, startedAt: { gte: since } } }</code></pre>
+        <div class="ref">web/lib/ads.ts:33</div>
+      </div>
+
+      <h2><span class="num">3</span> 2차 필터 — JS 루프</h2>
+      <p>DB 에서 빠진 후보들을 메모리에서 한 번 더 거릅니다.</p>
+
+      <div class="filter-card">
+        <div class="head">
+          <span class="pill js">JS</span>
+          <span class="title">④ 예산 소진 여부</span>
+        </div>
+        <div>
+          <code>spentCents &gt;= budgetCapCents</code> 면 제외.
+          impression 한 번당 <code>ceil(cpmCents / 1000)</code> 만큼 차감되어
+          쌓이고, 다 쓰면 <code>status</code> 가 <code>EXHAUSTED</code> 로
+          바뀌어서 사실상 ①에서도 막힙니다.
+        </div>
+        <div class="ref">web/lib/ads.ts:39, ads.ts:92-104</div>
+      </div>
+
+      <div class="filter-card">
+        <div class="head">
+          <span class="pill js">JS</span>
+          <span class="title">⑤ 일일 노출 캡</span>
+        </div>
+        <div>
+          광고에 <code>dailyCapImpressions</code> 가 설정돼 있으면, 오늘 자정
+          이후 시작된 impression 개수를 세서 그만큼 이상이면 제외.
+          <strong>사용자 단위가 아니라 광고 단위 카운트</strong>입니다.
+        </div>
+        <div class="ref">web/lib/ads.ts:40-45</div>
+      </div>
+
+      <h2><span class="num">4</span> 선택 — 가중치 랜덤</h2>
+      <p>
+        eligible 리스트가 비면 <code>null</code> 리턴 → 클라이언트에 빈 응답.
+        비어 있지 않으면 광고별로 가중치를 매겨 랜덤 추첨:
+      </p>
+      <pre><code>weight_i = max(1, budgetCapCents_i - spentCents_i) * (0.5 + Math.random())</code></pre>
+      <p>
+        잔여 예산이 많을수록 뽑힐 확률이 높고, <code>0.5 ~ 1.5</code> 의
+        곱셈 지터로 결정론적 편향을 약하게 흔들어 줍니다. 누적 분포에서
+        <code>Math.random() * total</code> 위치를 잘라서 하나를 고르는
+        weighted-roulette 방식이에요.
+      </p>
+      <div class="ref" style="margin-top:-6px">web/lib/ads.ts:50-61</div>
+
+      <h2 id="fallback"><span class="num">5</span> Fallback 티어 (Primary 가 빌 때)</h2>
+      <p>
+        오늘 적격 광고를 다 본 사용자에게도 광고는 계속 노출되어야 합니다.
+        Primary 가 <code>null</code> 을 리턴하면
+        <code>selectFallbackAdForUser(userId)</code> 가 호출되어
+        <strong>같은 1·2차 필터를 다시 돌리되 24h dedup 만 풉니다</strong>.
+        그 다음 LRU 기반 회전 가중치로 weighted random.
+      </p>
+
+      <div class="filter-card">
+        <div class="head">
+          <span class="pill js">JS</span>
+          <span class="title">신선도(freshness) × 잔여예산 × 지터</span>
+        </div>
+        <p style="margin: 8px 0 6px; color: var(--muted); font-size: 13.5px;">
+          이 유저에게 마지막으로 보여준 시각을 광고별로 계산
+          (<code>impression.groupBy(by:adId, _max: startedAt)</code>),
+          경과 시간을 0~24h 로 클램프해서 가중치로 씁니다.
+        </p>
+        <pre><code>minsSinceLast = clamp((now - lastShownAt) / 60s, 0, 1440)
+freshness     = minsSinceLast + 1        // 1 ~ 1441
+weight_i      = freshness * max(1, remaining_budget) * jitter(0.7~1.3)</code></pre>
+        <ul style="margin: 6px 0 0; padding-left: 18px; color: #d1d5db;">
+          <li><strong>방금 본 광고</strong> → freshness ≈ 1 (확률 거의 0)</li>
+          <li><strong>1시간 전</strong> → 61</li>
+          <li><strong>12시간 전</strong> → 721</li>
+          <li><strong>24h 이상 / 한 번도 못 본 광고</strong> → 1441 (최대)</li>
+        </ul>
+        <div class="ref" style="margin-top: 10px;">web/lib/ads.ts · selectFallbackAdForUser</div>
+      </div>
+
+      <p style="margin-top: 14px;">
+        결과 광고는 같은 <code>recordImpressionStart</code> 경로로 들어가서
+        impression 행이 만들어지고, <strong>토큰 보상도 동일</strong>하게
+        지급됩니다. 응답엔 <code>isFallback: true</code> 플래그가 붙어요
+        (분석/UI 용도).
+      </p>
+
+      <div class="callout warn" style="margin-top: 16px;">
+        <div class="label">광고주 과금 주의</div>
+        <p>
+          Fallback 도 <code>recordImpressionComplete</code> 에서 동일하게
+          <code>spentCents += ceil(cpmCents/1000)</code> 차감합니다. 즉 fallback
+          으로 재노출된 impression 도 광고주에게 과금됩니다. 한 유저가 하루에
+          같은 광고를 여러 번 카운트로 보게 되면 reach 가 부풀려질 수 있으니,
+          필요하면 fallback impression 은 0원 (또는 할인 CPM) 으로 따로 처리하는
+          정책을 추가하세요. 지금은 정책 없음 = 같은 가격.
+        </p>
+      </div>
+
+      <h2><span class="num">6</span> Impression 생성 + 응답</h2>
+      <p>
+        뽑힌 광고에 대해 <code>recordImpressionStart</code> 가
+        <code>Impression { adId, userId, deviceId, ipHash }</code> 행을
+        만듭니다. 이 시점부터 ③의 24h dedup 이 발동합니다.
+        그리고 R2 signed URL 로 영상 주소를 만들어 응답.
+      </p>
+      <pre><code>{
+  impressionId,
+  isFallback,             // true 면 fallback 티어로 골라진 광고
+  ad: { id, title, videoUrl, durationSec,
+        cta: ctaLabel && ctaUrl ? { label, url } : null }
+}</code></pre>
+      <div class="ref">web/app/api/ads/serve/route.ts:22-42</div>
+
+      <hr class="sep" />
+
+      <h2><span class="num">!</span> "광고가 없어요" 디버깅 체크리스트</h2>
+      <ol>
+        <li>승인된 광고가 정말 1건이라도 있나? <code>Ad.status === 'APPROVED'</code></li>
+        <li>스케줄 윈도우가 현재시각을 포함하나?</li>
+        <li>예산이 남았나? <code>spentCents &lt; budgetCapCents</code></li>
+        <li>일 캡에 안 걸렸나?</li>
+        <li>그리고 가장 흔한 원인:
+          <strong>이 유저로 최근 24h 안에 이미 한 번 시작된 impression이 있나?</strong></li>
+      </ol>
+
+      <div class="callout bad">
+        <div class="label">고스트 임프레션 주의</div>
+        <p>
+          이전엔 <code>AdOverlay</code> 가 <code>busy</code> 플래그를 따라
+          마운트/언마운트되었는데, Claude 의 툴 호출이 보통 영상 길이보다
+          짧기 때문에 영상이 끝나기 전에 overlay 가 사라지는 일이 잦았습니다.
+          그 경우 <code>completedAt</code> 이 안 박힌
+          "started-but-never-completed" impression 행이 DB 에 남고,
+          ③의 dedup 이 그걸 보고 그 광고를 <strong>24시간 동안 잠가버립니다</strong>.
+          토큰은 안 쌓이는데 광고는 또 안 뜨는 상태.
+        </p>
+        <p>
+          오버레이 라이프사이클 버그는 이미 고쳤지만
+          (<code>App.tsx</code> / <code>AdOverlay.tsx</code>), 기존에 쌓인
+          고스트 임프레션은 테이블에서 직접 지워야 풀립니다:
+        </p>
+        <pre><code>-- 미완료 임프레션만 정리 (Prisma 콘솔이나 psql)
+DELETE FROM "Impression"
+WHERE "completedAt" IS NULL
+  AND "startedAt" &gt; now() - interval '24 hours';</code></pre>
+      </div>
+
+      <div class="callout ok">
+        <div class="label">설계 의도</div>
+        <p>
+          24h-per-ad-per-user dedup 은 광고주 입장에선 같은 사람한테
+          하루에 한 번까지만 카운트되어 reach 가 부풀려지지 않게,
+          시청자 입장에선 같은 광고를 반복해서 보는 피로를 막아주는
+          장치입니다. 다만 광고 풀이 작을 때(=초기) 빠르게 풀이 비어 보이는
+          부작용이 있어요. 라이브에서 풀을 키우거나, 시청자 cooldown을
+          좁히는 (예: 6h) 식의 튜닝이 필요할 수 있습니다.
+        </p>
+      </div>
+
+      <p class="meta">
+        Source of truth: <code>web/lib/ads.ts</code>,
+        <code>web/app/api/ads/serve/route.ts</code>,
+        <code>web/app/api/ads/impression/[id]/route.ts</code>
+      </p>
+    </div>
+  </body>
+</html>

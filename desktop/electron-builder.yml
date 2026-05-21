@@ -1,0 +1,20 @@
+appId: app.claudead.desktop
+productName: Claude Ad Terminal
+directories:
+  output: release
+files:
+  - out/**
+  - node_modules/**
+  - "!**/*.map"
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - dmg
+win:
+  target:
+    - nsis
+linux:
+  target:
+    - AppImage
+asarUnpack:
+  - "**/node_modules/node-pty/**"

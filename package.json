@@ -1,0 +1,26 @@
+{
+  "name": "claude-ad-terminal",
+  "private": true,
+  "workspaces": [
+    "web",
+    "desktop"
+  ],
+  "scripts": {
+    "dev": "bash scripts/dev.sh",
+    "down": "bash scripts/down.sh",
+    "db:up": "docker compose up -d",
+    "db:push": "prisma db push --schema prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:seed": "tsx prisma/seed.ts",
+    "web": "npm -w web run dev",
+    "desktop": "npm -w desktop run dev"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  }
+}
