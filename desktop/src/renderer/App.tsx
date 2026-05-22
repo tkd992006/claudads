@@ -7,10 +7,12 @@ import BalanceBar from "./BalanceBar";
 export default function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [showAd, setShowAd] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     window.api.authGet().then((t) => setAuthed(!!t));
     window.api.onBusy((b) => {
+      setBusy(b);
       if (b) setShowAd(true);
     });
   }, []);
@@ -22,7 +24,9 @@ export default function App() {
     <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
       <Terminal />
       <BalanceBar />
-      {showAd && <AdOverlay onClose={() => setShowAd(false)} />}
+      {showAd && (
+        <AdOverlay busy={busy} onClose={() => setShowAd(false)} />
+      )}
     </div>
   );
 }

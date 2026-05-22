@@ -12,16 +12,27 @@ if [ ! -f .env ]; then
 fi
 set -a; . ./.env; set +a
 
+# 띄울 데스크탑 앱(Electron) 인스턴스 개수. 멀티 인스턴스 동작 테스트용.
+#   ./scripts/dev.sh 3      npm run dev -- 3      APP_COUNT=3 npm run dev
+APP_COUNT="${1:-${APP_COUNT:-1}}"
+if ! [[ "$APP_COUNT" =~ ^[0-9]+$ ]] || [ "$APP_COUNT" -lt 1 ]; then
+  echo "✗ 앱 개수는 1 이상의 정수여야 합니다 (받은 값: '$APP_COUNT')" >&2
+  exit 1
+fi
+
 LOG_DIR="$ROOT/.dev-logs"
 mkdir -p "$LOG_DIR"
 WEB_LOG="$LOG_DIR/web.log"
-DESKTOP_LOG="$LOG_DIR/desktop.log"
+
+DESKTOP_PIDS=()
 
 cleanup() {
   echo ""
   echo "▶ 종료 중..."
   [ -n "${WEB_PID:-}" ] && kill "$WEB_PID" 2>/dev/null || true
-  [ -n "${DESKTOP_PID:-}" ] && kill "$DESKTOP_PID" 2>/dev/null || true
+  for pid in ${DESKTOP_PIDS[@]:-}; do
+    kill "$pid" 2>/dev/null || true
+  done
   wait 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
@@ -70,10 +81,19 @@ for i in $(seq 1 60); do
   [ "$i" = "60" ] && { echo "✗ web 60초 안에 안 뜸. 로그 확인: $WEB_LOG"; exit 1; }
 done
 
-step "5/5 desktop electron 시작"
-( cd "$ROOT/desktop" && npm run dev > "$DESKTOP_LOG" 2>&1 ) &
-DESKTOP_PID=$!
-echo "   pid=$DESKTOP_PID  로그: $DESKTOP_LOG"
+step "5/5 desktop electron ${APP_COUNT}개 시작"
+if [ "$APP_COUNT" -gt 6 ]; then
+  echo "   ⚠ 인스턴스가 많습니다 — 각 앱이 vite+electron 을 따로 띄웁니다"
+fi
+for n in $(seq 1 "$APP_COUNT"); do
+  DLOG="$LOG_DIR/desktop-$n.log"
+  ( cd "$ROOT/desktop" && npm run dev > "$DLOG" 2>&1 ) &
+  dpid=$!
+  DESKTOP_PIDS+=("$dpid")
+  echo "   #$n pid=$dpid  로그: $DLOG"
+  # 인스턴스 간 약간 간격을 둬 vite dev 서버 포트 선점 경합을 피함.
+  [ "$n" -lt "$APP_COUNT" ] && sleep 2
+done
 
 cat <<EOF
 
@@ -82,14 +102,21 @@ cat <<EOF
   광고주  http://localhost:3000/advertiser
   관리자  http://localhost:3000/admin
   대시보드 http://localhost:3000/dashboard
-  데스크탑 Electron 창이 곧 뜹니다
+  데스크탑 Electron 창 ${APP_COUNT}개가 곧 뜹니다
 
-  로그: tail -f $WEB_LOG | tail -f $DESKTOP_LOG
+  로그: $LOG_DIR/  (web.log, desktop-N.log)
   종료: Ctrl+C
 ────────────────────────────────────────────────────────
 EOF
 
-# 둘 중 하나라도 죽으면 같이 내려옴 (macOS bash 3.2 호환)
-while kill -0 "$WEB_PID" 2>/dev/null && kill -0 "$DESKTOP_PID" 2>/dev/null; do
+# web 이 죽거나 데스크탑 인스턴스가 전부 닫히면 내려옴. 인스턴스를 하나씩
+# 닫으며 멀티 인스턴스 동작을 관찰할 수 있도록, 마지막 하나가 남아있는 한 유지.
+desktops_alive() {
+  for pid in ${DESKTOP_PIDS[@]:-}; do
+    kill -0 "$pid" 2>/dev/null && return 0
+  done
+  return 1
+}
+while kill -0 "$WEB_PID" 2>/dev/null && desktops_alive; do
   sleep 1
 done
