@@ -3,9 +3,11 @@ node_modules
 dist
 out
 *.log
+*.tsbuildinfo
 .env*
 !.env.example
 .DS_Store
 desktop/release
 prisma/migrations/dev.db*
 .dev-logs
+.gstack/
