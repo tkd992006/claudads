@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { PROMPT_INJECTION_UI_ENABLED } from "@/lib/features";
 
 export default function NewAdPage() {
   const router = useRouter();
@@ -46,9 +48,10 @@ export default function NewAdPage() {
           videoKey: signed.key,
           durationSec: Math.round(durationSec),
           ctaLabel: ctaLabel || undefined,
-          ctaUrl: ctaType === "LINK" ? (ctaUrl || undefined) : undefined,
+          ctaUrl: ctaType === "LINK" ? ctaUrl || undefined : undefined,
           ctaType,
-          ctaPrompt: ctaType === "PROMPT_INJECTION" ? (ctaPrompt || undefined) : undefined,
+          ctaPrompt:
+            ctaType === "PROMPT_INJECTION" ? ctaPrompt || undefined : undefined,
           cpmCents,
           budgetCapCents,
           dailyCapImpressions: dailyCap ? Number(dailyCap) : undefined,
@@ -64,111 +67,172 @@ export default function NewAdPage() {
   }
 
   return (
-    <main className="max-w-xl mx-auto p-8 space-y-4">
-      <h1 className="text-xl font-semibold">새 광고 등록</h1>
-      <form onSubmit={submit} className="space-y-3">
-        <label className="block">
-          <div className="text-sm mb-1">제목</div>
-          <input className="w-full" required value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
+    <main className="mx-auto max-w-xl animate-fade-up px-6 py-12">
+      <Link
+        href="/advertiser"
+        className="link link-hover mb-4 inline-flex items-center gap-1 text-sm text-neutral-500"
+      >
+        ← 광고주 콘솔
+      </Link>
+      <h1 className="text-2xl font-semibold">새 광고 등록</h1>
+      <p className="mt-1 text-sm text-neutral-500">
+        등록 후 관리자 검수를 거쳐 노출이 시작됩니다.
+      </p>
 
-        <label className="block">
-          <div className="text-sm mb-1">영상 (mp4/webm, 짧을수록 좋음)</div>
-          <input
-            type="file"
-            accept="video/mp4,video/webm"
-            required
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
-        </label>
+      <form onSubmit={submit} className="mt-6 space-y-5">
+        {/* Creative */}
+        <section className="card surface border border-white/[0.08] bg-base-200">
+          <div className="card-body gap-4 p-5">
+            <SectionTitle>크리에이티브</SectionTitle>
+            <Field label="제목">
+              <input
+                className="input input-bordered w-full"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="광고 제목"
+              />
+            </Field>
+            <Field label="영상 (mp4 / webm — 짧을수록 좋음)">
+              <input
+                type="file"
+                className="file-input file-input-bordered w-full"
+                accept="video/mp4,video/webm"
+                required
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+            </Field>
+          </div>
+        </section>
 
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block">
-            <div className="text-sm mb-1">CPM (원/1000노출)</div>
-            <input
-              className="w-full"
-              type="number"
-              required
-              value={cpmCents}
-              onChange={(e) => setCpmCents(Number(e.target.value))}
-            />
-          </label>
-          <label className="block">
-            <div className="text-sm mb-1">예산 캡 (원)</div>
-            <input
-              className="w-full"
-              type="number"
-              required
-              value={budgetCapCents}
-              onChange={(e) => setBudgetCapCents(Number(e.target.value))}
-            />
-          </label>
-        </div>
-
-        <label className="block">
-          <div className="text-sm mb-1">일일 노출 한도 (선택)</div>
-          <input
-            className="w-full"
-            type="number"
-            value={dailyCap}
-            onChange={(e) => setDailyCap(e.target.value)}
-          />
-        </label>
-
-        <label className="block">
-          <div className="text-sm mb-1">CTA 타입</div>
-          <select
-            className="w-full"
-            value={ctaType}
-            onChange={(e) => setCtaType(e.target.value as "LINK" | "PROMPT_INJECTION")}
-          >
-            <option value="LINK">링크 (외부 URL 열기)</option>
-            <option value="PROMPT_INJECTION">프롬프트 주입 (사용자 입력란에 프리필)</option>
-          </select>
-        </label>
-
-        <label className="block">
-          <div className="text-sm mb-1">CTA 라벨 {ctaType === "LINK" ? "(선택)" : ""}</div>
-          <input
-            className="w-full"
-            required={ctaType === "PROMPT_INJECTION"}
-            value={ctaLabel}
-            onChange={(e) => setCtaLabel(e.target.value)}
-          />
-        </label>
-
-        {ctaType === "LINK" ? (
-          <label className="block">
-            <div className="text-sm mb-1">CTA URL (선택)</div>
-            <input
-              className="w-full"
-              type="url"
-              value={ctaUrl}
-              onChange={(e) => setCtaUrl(e.target.value)}
-            />
-          </label>
-        ) : (
-          <label className="block">
-            <div className="text-sm mb-1">
-              프롬프트 텍스트 (최대 500자, 사용자 입력란에 그대로 채워집니다)
+        {/* Budget */}
+        <section className="card surface border border-white/[0.08] bg-base-200">
+          <div className="card-body gap-4 p-5">
+            <SectionTitle>예산 & 입찰</SectionTitle>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="CPM (원 / 1000노출)">
+                <input
+                  className="input input-bordered w-full font-mono"
+                  type="number"
+                  required
+                  value={cpmCents}
+                  onChange={(e) => setCpmCents(Number(e.target.value))}
+                />
+              </Field>
+              <Field label="예산 캡 (원)">
+                <input
+                  className="input input-bordered w-full font-mono"
+                  type="number"
+                  required
+                  value={budgetCapCents}
+                  onChange={(e) => setBudgetCapCents(Number(e.target.value))}
+                />
+              </Field>
             </div>
-            <textarea
-              className="w-full"
-              required
-              rows={3}
-              maxLength={500}
-              value={ctaPrompt}
-              onChange={(e) => setCtaPrompt(e.target.value)}
-            />
-          </label>
-        )}
+            <Field label="일일 노출 한도 (선택)">
+              <input
+                className="input input-bordered w-full font-mono"
+                type="number"
+                placeholder="제한 없음"
+                value={dailyCap}
+                onChange={(e) => setDailyCap(e.target.value)}
+              />
+            </Field>
+          </div>
+        </section>
 
-        {err && <p className="text-red-400 text-sm">{err}</p>}
-        <button className="btn-primary" disabled={busy}>
-          {busy ? "업로드 중..." : "등록 (검수 대기)"}
+        {/* CTA */}
+        <section className="card surface border border-white/[0.08] bg-base-200">
+          <div className="card-body gap-4 p-5">
+            <SectionTitle>콜 투 액션</SectionTitle>
+            {/* PROMPT_INJECTION 은 방어 장치가 완성되기 전까지 OFF (features.ts).
+                플래그가 꺼져 있으면 타입 선택 자체를 숨기고 LINK 로 고정한다. */}
+            {PROMPT_INJECTION_UI_ENABLED && (
+              <Field label="CTA 타입">
+                <select
+                  className="select select-bordered w-full"
+                  value={ctaType}
+                  onChange={(e) =>
+                    setCtaType(e.target.value as "LINK" | "PROMPT_INJECTION")
+                  }
+                >
+                  <option value="LINK">링크 (외부 URL 열기)</option>
+                  <option value="PROMPT_INJECTION">
+                    프롬프트 주입 (사용자 입력란에 프리필)
+                  </option>
+                </select>
+              </Field>
+            )}
+            <Field
+              label={`CTA 라벨${ctaType === "LINK" ? " (선택)" : ""}`}
+            >
+              <input
+                className="input input-bordered w-full"
+                required={ctaType === "PROMPT_INJECTION"}
+                value={ctaLabel}
+                onChange={(e) => setCtaLabel(e.target.value)}
+                placeholder="예: 자세히 보기"
+              />
+            </Field>
+            {ctaType === "LINK" ? (
+              <Field label="CTA URL (선택)">
+                <input
+                  className="input input-bordered w-full"
+                  type="url"
+                  value={ctaUrl}
+                  onChange={(e) => setCtaUrl(e.target.value)}
+                  placeholder="https://"
+                />
+              </Field>
+            ) : (
+              <Field label="프롬프트 텍스트 (최대 500자, 입력란에 그대로 채워집니다)">
+                <textarea
+                  className="textarea textarea-bordered w-full"
+                  required
+                  rows={3}
+                  maxLength={500}
+                  value={ctaPrompt}
+                  onChange={(e) => setCtaPrompt(e.target.value)}
+                />
+              </Field>
+            )}
+          </div>
+        </section>
+
+        {err && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
+            {err}
+          </div>
+        )}
+        <button className="btn btn-primary w-full" disabled={busy}>
+          {busy && <span className="loading loading-spinner loading-xs" />}
+          {busy ? "업로드 중" : "등록 (검수 대기)"}
         </button>
       </form>
     </main>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-emerald-400/70">
+      {children}
+    </h2>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-sm text-neutral-300">{label}</span>
+      {children}
+    </label>
   );
 }
 

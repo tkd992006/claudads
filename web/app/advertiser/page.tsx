@@ -17,87 +17,103 @@ export default async function AdvertiserHome() {
   if (!acc) return <CreateAccount />;
 
   return (
-    <main className="max-w-5xl mx-auto p-8 space-y-6">
-      <header className="flex justify-between items-end">
-        <div>
+    <main className="mx-auto max-w-5xl animate-fade-up space-y-6 px-6 py-12">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-sm text-neutral-500">광고주 콘솔</p>
           <h1 className="text-2xl font-semibold">{acc.name}</h1>
-          <p className="text-sm text-neutral-400">광고주 콘솔</p>
         </div>
-        <div className="text-right space-y-1">
-          <div className="text-sm text-neutral-400">잔액</div>
-          <div className="text-xl font-semibold">
-            ₩{acc.balanceCents.toLocaleString()}
+        <div className="surface flex items-center gap-5 rounded-xl border border-white/[0.08] bg-base-200 px-5 py-3">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-neutral-500">
+              잔액
+            </p>
+            <p className="font-mono text-xl font-semibold">
+              ₩{acc.balanceCents.toLocaleString()}
+            </p>
           </div>
-          <Link className="text-sm underline" href="/advertiser/billing">
-            충전하기
+          <Link
+            href="/advertiser/billing"
+            className="btn btn-ghost btn-sm border-white/10"
+          >
+            충전
           </Link>
         </div>
       </header>
 
-      <div className="flex justify-end">
-        <Link className="btn-primary" href="/advertiser/ads/new">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-medium text-neutral-400">
+          내 광고{" "}
+          <span className="text-neutral-600">({acc.ads.length})</span>
+        </h2>
+        <Link href="/advertiser/ads/new" className="btn btn-primary btn-sm">
           + 새 광고 등록
         </Link>
       </div>
 
-      <section className="card overflow-hidden p-0">
-        <table className="w-full text-sm">
-          <thead className="bg-neutral-800 text-neutral-400">
-            <tr>
-              <th className="text-left p-3">제목</th>
-              <th className="text-right p-3">CPM</th>
-              <th className="text-right p-3">예산</th>
-              <th className="text-right p-3">소진</th>
-              <th className="text-right p-3">노출</th>
-              <th className="text-right p-3">상태</th>
+      <div className="surface overflow-x-auto rounded-xl border border-white/[0.08] bg-base-200">
+        <table className="table">
+          <thead>
+            <tr className="border-white/[0.07] text-xs uppercase tracking-wide text-neutral-500">
+              <th>제목</th>
+              <th className="text-right">CPM</th>
+              <th className="text-right">예산</th>
+              <th className="text-right">소진</th>
+              <th className="text-right">노출</th>
+              <th className="text-right">상태</th>
             </tr>
           </thead>
           <tbody>
             {acc.ads.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-8 text-center text-neutral-500">
-                  등록된 광고가 없습니다.
+                <td
+                  colSpan={6}
+                  className="py-14 text-center text-sm text-neutral-600"
+                >
+                  등록된 광고가 없습니다. 첫 광고를 등록해 보세요.
                 </td>
               </tr>
             )}
             {acc.ads.map((ad) => (
-              <tr key={ad.id} className="border-t border-neutral-800">
-                <td className="p-3">{ad.title}</td>
-                <td className="p-3 text-right">
+              <tr
+                key={ad.id}
+                className="border-white/[0.05] transition-colors hover:bg-white/[0.02]"
+              >
+                <td className="font-medium text-neutral-100">{ad.title}</td>
+                <td className="text-right font-mono text-neutral-300">
                   ₩{ad.cpmCents.toLocaleString()}
                 </td>
-                <td className="p-3 text-right">
+                <td className="text-right font-mono text-neutral-300">
                   ₩{ad.budgetCapCents.toLocaleString()}
                 </td>
-                <td className="p-3 text-right">
+                <td className="text-right font-mono text-neutral-500">
                   ₩{ad.spentCents.toLocaleString()}
                 </td>
-                <td className="p-3 text-right">
+                <td className="text-right font-mono text-neutral-300">
                   {ad.impressionsCount.toLocaleString()}
                 </td>
-                <td className="p-3 text-right">
+                <td className="text-right">
                   <StatusBadge status={ad.status} />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </section>
+      </div>
     </main>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const color: Record<string, string> = {
-    PENDING: "bg-yellow-900 text-yellow-200",
-    APPROVED: "bg-emerald-900 text-emerald-200",
-    PAUSED: "bg-neutral-700 text-neutral-200",
-    REJECTED: "bg-red-900 text-red-200",
-    EXHAUSTED: "bg-neutral-800 text-neutral-400",
+  const map: Record<string, { cls: string; label: string }> = {
+    PENDING: { cls: "badge-warning", label: "검수 대기" },
+    APPROVED: { cls: "badge-success", label: "노출 중" },
+    PAUSED: { cls: "badge-ghost", label: "일시정지" },
+    REJECTED: { cls: "badge-error", label: "반려" },
+    EXHAUSTED: { cls: "badge-neutral", label: "예산 소진" },
   };
+  const m = map[status] ?? { cls: "", label: status };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs ${color[status] ?? ""}`}>
-      {status}
-    </span>
+    <span className={`badge badge-sm badge-outline ${m.cls}`}>{m.label}</span>
   );
 }
