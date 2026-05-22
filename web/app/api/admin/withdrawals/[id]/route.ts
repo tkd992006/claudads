@@ -38,14 +38,18 @@ export async function PATCH(
       where: { id },
       data: { status: "APPROVED" },
     });
-    return NextResponse.json({ withdrawal: w });
+    return NextResponse.json({
+      withdrawal: { ...w, amountMicro: w.amountMicro.toString() },
+    });
   }
   if (action === "paid") {
     const w = await prisma.withdrawal.update({
       where: { id },
       data: { status: "PAID", paidAt: new Date() },
     });
-    return NextResponse.json({ withdrawal: w });
+    return NextResponse.json({
+      withdrawal: { ...w, amountMicro: w.amountMicro.toString() },
+    });
   }
   return NextResponse.json({ error: "invalid" }, { status: 400 });
 }

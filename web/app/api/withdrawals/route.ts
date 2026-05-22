@@ -20,7 +20,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { userId } = await requireUser();
+  const { userId, role } = await requireUser();
   const { amountMicro, destination } = (await req.json().catch(() => ({}))) as {
     amountMicro?: string;
     destination?: string;
@@ -33,7 +33,9 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "bad amount" }, { status: 400 });
   }
-  if (amount < MIN_WITHDRAW_MICRO)
+  if (amount <= 0n)
+    return NextResponse.json({ error: "bad amount" }, { status: 400 });
+  if (role !== "ADMIN" && amount < MIN_WITHDRAW_MICRO)
     return NextResponse.json({ error: "below minimum" }, { status: 400 });
 
   return prisma.$transaction(async (tx) => {

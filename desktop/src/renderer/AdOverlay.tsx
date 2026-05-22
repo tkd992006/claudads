@@ -25,7 +25,13 @@ function deviceId() {
   return v;
 }
 
-export default function AdOverlay({ onClose }: { onClose: () => void }) {
+export default function AdOverlay({
+  busy,
+  onClose,
+}: {
+  busy: boolean;
+  onClose: () => void;
+}) {
   const [ad, setAd] = useState<Ad | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -52,6 +58,21 @@ export default function AdOverlay({ onClose }: { onClose: () => void }) {
       setRemaining(r.ad.durationSec);
     })();
   }, []);
+
+  // 작업이 끝나거나 Claude 가 입력을 기다리면(busy=false) 광고를 닫는다.
+  // 끝까지 안 봤어도 impression 을 finalize 하면 서버가 본 구간만큼 비례
+  // 적립한다. 영상이 이미 끝났거나(completedRef) 아직 못 불러왔으면 그냥 닫는다.
+  useEffect(() => {
+    if (busy) return;
+    if (ad && !completedRef.current) {
+      completedRef.current = true;
+      void window.api
+        .completeAd(ad.impressionId, maxTimeRef.current)
+        .finally(onClose);
+    } else {
+      onClose();
+    }
+  }, [busy, ad]);
 
   function onTimeUpdate(e: React.SyntheticEvent<HTMLVideoElement>) {
     const v = e.currentTarget;
@@ -80,7 +101,7 @@ export default function AdOverlay({ onClose }: { onClose: () => void }) {
   async function onEnded() {
     if (!ad || completedRef.current) return;
     completedRef.current = true;
-    await window.api.completeAd(ad.impressionId);
+    await window.api.completeAd(ad.impressionId, maxTimeRef.current);
     setDone(true);
   }
 

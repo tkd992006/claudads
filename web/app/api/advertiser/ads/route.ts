@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { promptInjectionEnabled } from "@/lib/features";
 import { z } from "zod";
 
 const adCreate = z
@@ -42,6 +43,13 @@ export async function POST(req: Request) {
   const body = adCreate.safeParse(await req.json().catch(() => ({})));
   if (!body.success)
     return NextResponse.json({ error: body.error.flatten() }, { status: 400 });
+
+  // PROMPT_INJECTION CTA 는 방어가 완성되기 전까지 피처 플래그로 OFF.
+  if (body.data.ctaType === "PROMPT_INJECTION" && !promptInjectionEnabled())
+    return NextResponse.json(
+      { error: "PROMPT_INJECTION CTA is currently disabled" },
+      { status: 400 },
+    );
 
   const ad = await prisma.ad.create({
     data: {

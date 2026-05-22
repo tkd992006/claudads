@@ -3,7 +3,14 @@ import { join } from "path";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { spawnPty, type PtyHandle } from "./pty";
 import { startHookServer } from "./hookServer";
-import { mergeClaudeHooks, restoreClaudeSettings } from "./settingsPatch";
+import {
+  mergeClaudeHooks,
+  restoreClaudeSettings,
+  sweepDeadInstances,
+  registerInstance,
+  unregisterInstance,
+  activeInstanceCount,
+} from "./settingsPatch";
 import { startDeviceFlow, pollToken } from "./auth";
 import * as api from "./apiClient";
 import os from "os";
@@ -31,6 +38,8 @@ function loadToken(): string | null {
 let win: BrowserWindow | null = null;
 let pty: PtyHandle | null = null;
 let hookPort = 0;
+let instanceId: string | null = null;
+let cleanedUp = false;
 
 async function createWindow() {
   win = new BrowserWindow({
@@ -110,6 +119,14 @@ app.whenReady().then(async () => {
   hookPort = await startHookServer(broadcastBusy);
   mkdirSync(app.getPath("userData"), { recursive: true });
   await mergeClaudeHooks(hookPort).catch((e) => console.error("hook merge", e));
+  // 멀티 인스턴스 추적: 크래시한 인스턴스 잔여 파일을 청소하고 자신을 등록.
+  // 마지막 인스턴스가 종료할 때만 settings.json 을 복원한다(아래 before-quit).
+  try {
+    sweepDeadInstances();
+    instanceId = registerInstance(hookPort);
+  } catch (e) {
+    console.error("instance register", e);
+  }
 
   // IPC
   ipcMain.handle("pty:start", async () => {
@@ -148,11 +165,14 @@ app.whenReady().then(async () => {
     if (!t) return { error: "no token" };
     return api.fetchAd(t, deviceId);
   });
-  ipcMain.handle("ad:complete", async (_, impressionId: string) => {
-    const t = loadToken();
-    if (!t) return { error: "no token" };
-    return api.completeImpression(t, impressionId);
-  });
+  ipcMain.handle(
+    "ad:complete",
+    async (_, impressionId: string, playedSec: number) => {
+      const t = loadToken();
+      if (!t) return { error: "no token" };
+      return api.completeImpression(t, impressionId, playedSec ?? 0);
+    },
+  );
   ipcMain.handle("ad:cta", async (_, impressionId: string, url: string) => {
     const t = loadToken();
     if (!t) return { error: "no token" };
@@ -179,11 +199,26 @@ app.whenReady().then(async () => {
   await createWindow();
 });
 
-app.on("window-all-closed", async () => {
-  await restoreClaudeSettings().catch(() => {});
+// 이 인스턴스를 레지스트리에서 빼고, 마지막 인스턴스였다면 settings.json 복원.
+// 동기 파일 연산만 사용 — before-quit 의 async 작업은 완료가 보장되지 않는다.
+function cleanupInstance() {
+  if (cleanedUp) return;
+  cleanedUp = true;
+  pty?.kill();
+  try {
+    if (instanceId) unregisterInstance(instanceId);
+    if (activeInstanceCount() === 0) {
+      void restoreClaudeSettings();
+    }
+  } catch (e) {
+    console.error("instance cleanup", e);
+  }
+}
+
+app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-app.on("before-quit", async () => {
-  pty?.kill();
+app.on("before-quit", () => {
+  cleanupInstance();
 });

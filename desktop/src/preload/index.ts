@@ -17,8 +17,8 @@ const api = {
   authLogout: () => ipcRenderer.invoke("auth:logout"),
 
   fetchAd: (deviceId: string) => ipcRenderer.invoke("ad:fetch", deviceId),
-  completeAd: (impressionId: string) =>
-    ipcRenderer.invoke("ad:complete", impressionId),
+  completeAd: (impressionId: string, playedSec: number) =>
+    ipcRenderer.invoke("ad:complete", impressionId, playedSec),
   clickCta: (impressionId: string, url: string) =>
     ipcRenderer.invoke("ad:cta", impressionId, url),
   prefillPrompt: (impressionId: string, text: string) =>

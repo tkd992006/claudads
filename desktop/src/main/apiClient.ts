@@ -23,9 +23,14 @@ export function fetchAd(token: string, deviceId: string) {
   });
 }
 
-export function completeImpression(token: string, impressionId: string) {
+export function completeImpression(
+  token: string,
+  impressionId: string,
+  playedSec: number,
+) {
   return jsonReq(`/api/ads/impression/${impressionId}`, token, {
     method: "PATCH",
+    body: JSON.stringify({ playedSec }),
   });
 }
 
