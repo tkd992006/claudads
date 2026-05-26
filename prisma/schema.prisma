@@ -29,6 +29,7 @@ enum LedgerReason {
   IMPRESSION
   CTA
   REFERRAL
+  REFERRAL_COMMISSION
   WITHDRAWAL
   ADJUSTMENT
 }
@@ -56,6 +57,10 @@ model User {
   role           Role     @default(VIEWER)
   banned         Boolean  @default(false)
   inviterId      String?
+  // 레퍼럴 커미션이 활성인 시점까지의 만료 시각. 가입 시점에 추천인이 attach
+  // 되면 now + 60일로 설정되고, 이 시각이 지나면 더 이상 커미션을 분배하지 않는다.
+  // null = 추천인 없음. 매 EARN 마다 Referral 테이블을 join 하지 않기 위한 denorm.
+  referralEndsAt DateTime?
   balanceMicro   BigInt   @default(0)
   createdAt      DateTime @default(now())
 

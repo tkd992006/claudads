@@ -1,27 +1,84 @@
 import { redirect } from "next/navigation";
+import { cookies, headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getBalanceMicro } from "@/lib/ads";
+import { attachReferral } from "@/lib/services/referral";
 import WithdrawForm from "./withdraw-form";
+import ReferralSection from "./referral-section";
 
 export default async function DashboardPage() {
   const s = await auth();
   if (!s) redirect("/api/auth/signin?callbackUrl=/dashboard");
   const userId = (s as { userId?: string }).userId!;
 
-  const [balance, withdrawals, recent] = await Promise.all([
-    getBalanceMicro(userId),
-    prisma.withdrawal.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    }),
-    prisma.tokenLedger.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    }),
-  ]);
+  // 레퍼럴 자동 attach: 미들웨어가 박아둔 `ref` 쿠키를 읽어 한 번만 시도하고
+  // 쿠키를 비운다. 이미 inviterId 가 있거나 self/invalid 인 경우엔 헬퍼가
+  // 멱등하게 거절하므로 결과와 무관하게 안전.
+  const cookieStore = await cookies();
+  const refCookie = cookieStore.get("ref")?.value;
+  if (refCookie) {
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { inviterId: true, login: true },
+    });
+    if (me && !me.inviterId && me.login !== refCookie) {
+      await prisma.$transaction((tx) => attachReferral(tx, userId, refCookie));
+    }
+    cookieStore.delete("ref");
+  }
+
+  const [me, balance, withdrawals, recent, inviteesCount, commissionAgg] =
+    await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          login: true,
+          inviterId: true,
+          referralEndsAt: true,
+        },
+      }),
+      getBalanceMicro(userId),
+      prisma.withdrawal.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+      prisma.tokenLedger.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }),
+      prisma.referral.count({ where: { inviterId: userId } }),
+      // 내가 받은 모든 REFERRAL_COMMISSION 합계. 초대받은 본인 보너스도 같은
+      // reason 으로 기록되므로 "추천으로 추가 적립된 총량"의 의미.
+      prisma.tokenLedger.aggregate({
+        where: { userId, reason: "REFERRAL_COMMISSION" },
+        _sum: { deltaMicro: true },
+      }),
+    ]);
+
+  // 내 추천인 login — 위 select 에서 자기-참조 relation 이 없어 ID 만 가져왔으므로
+  // 별도로 한 번 더 조회. 보통은 null 이라 추가 round-trip 비용도 0.
+  const inviter = me?.inviterId
+    ? await prisma.user.findUnique({
+        where: { id: me.inviterId },
+        select: { login: true },
+      })
+    : null;
+
+  // origin: 추천 링크에 박아 줄 https://... — Next 의 server headers 에서 host 를
+  // 그대로 가져온다. 로컬은 http, 운영은 https.
+  const h = await headers();
+  const host = h.get("host") ?? "localhost:3000";
+  const proto =
+    h.get("x-forwarded-proto") ??
+    (host.startsWith("localhost") ? "http" : "https");
+  const origin = `${proto}://${host}`;
+
+  const remainingMs = me?.referralEndsAt
+    ? me.referralEndsAt.getTime() - Date.now()
+    : null;
 
   return (
     <main className="mx-auto max-w-3xl animate-fade-up space-y-6 px-6 py-12">
@@ -46,6 +103,16 @@ export default async function DashboardPage() {
           광고 노출마다 자동으로 적립됩니다.
         </p>
       </div>
+
+      {/* Referral */}
+      <ReferralSection
+        myLogin={me?.login ?? ""}
+        inviter={inviter}
+        remainingMs={remainingMs}
+        inviteesCount={inviteesCount}
+        commissionMicro={(commissionAgg._sum.deltaMicro ?? 0n).toString()}
+        origin={origin}
+      />
 
       {/* Withdraw */}
       <section className="card surface border border-white/[0.08] bg-base-200">

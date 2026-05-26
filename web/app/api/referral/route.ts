@@ -1,44 +1,35 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
-import { appendTokenLedger } from "@/lib/services/ledger";
+import { attachReferral } from "@/lib/services/referral";
 
-const REFERRAL_BONUS_MICRO = 5_000_000n;
-
+/**
+ * 매뉴얼 입력 경로 — 대시보드의 "추천인 코드 입력" 폼이 호출한다.
+ * URL ?ref=... 자동 attach 경로는 dashboard 서버 컴포넌트에서 같은 헬퍼를
+ * 직접 호출하므로 이 라우트를 거치지 않는다.
+ *
+ * 가입 보너스·인보이트 관계 생성·referralEndsAt 설정은 모두 attachReferral 안에
+ * 일원화돼 있고 inviteeId @unique 가 중복을 막아준다.
+ */
 export async function POST(req: Request) {
   const { userId } = await requireUser();
   const { inviterLogin } = (await req.json().catch(() => ({}))) as {
     inviterLogin?: string;
   };
-  if (!inviterLogin)
+  if (!inviterLogin || typeof inviterLogin !== "string") {
     return NextResponse.json({ error: "inviterLogin required" }, { status: 400 });
+  }
 
-  const inviter = await prisma.user.findFirst({ where: { login: inviterLogin } });
-  if (!inviter || inviter.id === userId)
-    return NextResponse.json({ error: "invalid inviter" }, { status: 400 });
+  const result = await prisma.$transaction((tx) =>
+    attachReferral(tx, userId, inviterLogin),
+  );
 
-  const existing = await prisma.referral.findUnique({ where: { inviteeId: userId } });
-  if (existing) return NextResponse.json({ error: "already referred" }, { status: 409 });
-
-  await prisma.$transaction(async (tx) => {
-    await tx.referral.create({
-      data: { inviterId: inviter.id, inviteeId: userId, granted: true },
-    });
-    await tx.user.update({ where: { id: userId }, data: { inviterId: inviter.id } });
-    // C2: 레퍼럴 보너스 — inviter
-    await appendTokenLedger(tx, {
-      userId: inviter.id,
-      deltaMicro: REFERRAL_BONUS_MICRO,
-      reason: "REFERRAL",
-      refId: userId,
-    });
-    // C2: 레퍼럴 보너스 — invitee
-    await appendTokenLedger(tx, {
-      userId,
-      deltaMicro: REFERRAL_BONUS_MICRO,
-      reason: "REFERRAL",
-      refId: inviter.id,
-    });
-  });
+  if (!result.ok) {
+    const status =
+      result.reason === "already" ? 409
+      : result.reason === "not_found" ? 404
+      : 400;
+    return NextResponse.json({ error: result.reason }, { status });
+  }
   return NextResponse.json({ ok: true });
 }

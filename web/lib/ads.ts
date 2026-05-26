@@ -1,9 +1,7 @@
 import { prisma } from "./prisma";
 import type { Ad } from "@prisma/client";
-import {
-  appendTokenLedger,
-  appendAdvertiserLedger,
-} from "./services/ledger";
+import { appendAdvertiserLedger } from "./services/ledger";
+import { creditViewerEarning } from "./services/referral";
 
 // ─── 통화 모델 ──────────────────────────────────────────────────────────────
 // 시청자 보상은 micro(1/1_000_000 KRW 가상토큰), 광고주 과금은 cent 단위다.
@@ -345,8 +343,9 @@ export async function recordImpressionComplete(
       });
     }
 
-    // C2: 시청자 토큰 원장 기록 + user.balanceMicro 동기 업데이트
-    await appendTokenLedger(tx, {
+    // C2: 시청자 토큰 원장 기록 + balanceMicro 동기 업데이트.
+    // 활성 추천 관계가 있으면 같은 tx 안에서 양방향 5% 커미션도 분배된다.
+    await creditViewerEarning(tx, {
       userId,
       deltaMicro: reward,
       reason: "IMPRESSION",
@@ -409,8 +408,9 @@ export async function recordCta(impressionId: string, userId: string) {
       return { ok: false as const, reason: "advertiser_insufficient_funds" };
     }
 
-    // C2: 시청자 CTA 보너스 원장 기록 + user.balanceMicro 동기 업데이트
-    await appendTokenLedger(tx, {
+    // C2: 시청자 CTA 보너스 원장 기록 + balanceMicro 동기 업데이트.
+    // 추천 관계가 활성이면 같은 tx 에서 양방향 5% 커미션도 분배.
+    await creditViewerEarning(tx, {
       userId,
       deltaMicro: bonus,
       reason: "CTA",
