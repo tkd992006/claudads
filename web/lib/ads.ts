@@ -1,5 +1,9 @@
 import { prisma } from "./prisma";
 import type { Ad } from "@prisma/client";
+import {
+  appendTokenLedger,
+  appendAdvertiserLedger,
+} from "./services/ledger";
 
 // ─── 통화 모델 ──────────────────────────────────────────────────────────────
 // 시청자 보상은 micro(1/1_000_000 KRW 가상토큰), 광고주 과금은 cent 단위다.
@@ -308,16 +312,18 @@ export async function recordImpressionComplete(
       return { ok: false as const, reason: "ad_exhausted" };
     }
 
-    // 광고주 계정 잔액(AdvertiserAccount.balanceCents)에서도 같은 cost 를
-    // 원자적으로 차감한다. 광고별 cap(spentCents)과 달리 이건 광고주가 실제로
-    // 충전한 돈이다. 잔액이 모자라면 방금 올린 spentCents/impressionsCount 를
-    // 같은 트랜잭션 안에서 되돌려 노출을 "없던 일"로 만든다 — 시청자는 보상을
-    // 못 받고(헛봄), 플랫폼이 비용을 떠안지 않는다.
-    const paid = await tx.advertiserAccount.updateMany({
-      where: { id: imp.ad.advertiserId, balanceCents: { gte: cost } },
-      data: { balanceCents: { decrement: cost } },
+    // C3: 광고주 계정 잔액(balanceCents)에서 같은 cost 를 차감하고 과금 원장을
+    // 기록한다. 광고별 cap(spentCents)과 달리 이건 광고주가 실제로 충전한 돈이다.
+    // appendAdvertiserLedger 가 조건부 updateMany 로 원자적 차감하며, 잔액이
+    // 모자라면 false 를 반환 — 방금 올린 spentCents/impressionsCount 를 같은
+    // 트랜잭션 안에서 되돌려 노출을 "없던 일"로 만든다(시청자 헛봄, 플랫폼 부담 없음).
+    const paid = await appendAdvertiserLedger(tx, {
+      advertiserId: imp.ad.advertiserId,
+      deltaCents: -cost,
+      reason: "IMPRESSION",
+      refId: impressionId,
     });
-    if (paid.count === 0) {
+    if (!paid) {
       await tx.ad.update({
         where: { id: imp.adId },
         data: {
@@ -339,13 +345,12 @@ export async function recordImpressionComplete(
       });
     }
 
-    await tx.tokenLedger.create({
-      data: {
-        userId,
-        deltaMicro: reward,
-        reason: "IMPRESSION",
-        refId: impressionId,
-      },
+    // C2: 시청자 토큰 원장 기록 + user.balanceMicro 동기 업데이트
+    await appendTokenLedger(tx, {
+      userId,
+      deltaMicro: reward,
+      reason: "IMPRESSION",
+      refId: impressionId,
     });
     return { ok: true as const, reward, concurrentN, watchedFraction };
   });
@@ -388,12 +393,15 @@ export async function recordCta(impressionId: string, userId: string) {
       return { ok: false as const, reason: "ad_budget_too_low" };
     }
 
-    // 광고주 계정 잔액 원자적 차감. 모자라면 위 spentCents 증가를 되돌린다.
-    const paid = await tx.advertiserAccount.updateMany({
-      where: { id: imp.ad.advertiserId, balanceCents: { gte: ctaCost } },
-      data: { balanceCents: { decrement: ctaCost } },
+    // C3: appendAdvertiserLedger 가 잔액을 원자적으로 차감하고 CTA 과금 원장을
+    // 기록한다. 모자라면 false 를 반환 — 위 spentCents 증가를 되돌린다.
+    const paid = await appendAdvertiserLedger(tx, {
+      advertiserId: imp.ad.advertiserId,
+      deltaCents: -ctaCost,
+      reason: "CTA",
+      refId: impressionId,
     });
-    if (paid.count === 0) {
+    if (!paid) {
       await tx.ad.update({
         where: { id: imp.adId },
         data: { spentCents: { decrement: ctaCost } },
@@ -401,22 +409,23 @@ export async function recordCta(impressionId: string, userId: string) {
       return { ok: false as const, reason: "advertiser_insufficient_funds" };
     }
 
-    await tx.tokenLedger.create({
-      data: {
-        userId,
-        deltaMicro: bonus,
-        reason: "CTA",
-        refId: impressionId,
-      },
+    // C2: 시청자 CTA 보너스 원장 기록 + user.balanceMicro 동기 업데이트
+    await appendTokenLedger(tx, {
+      userId,
+      deltaMicro: bonus,
+      reason: "CTA",
+      refId: impressionId,
     });
     return { ok: true as const, bonus, ctaUrl: imp.ad.ctaUrl };
   });
 }
 
+// C2: O(1) — tokenLedger 전체 스캔 대신 user.balanceMicro 컬럼 단순 조회.
+// 모든 원장 쓰기는 appendTokenLedger 헬퍼를 거쳐 두 값을 항상 동기화한다.
 export async function getBalanceMicro(userId: string): Promise<bigint> {
-  const rows = await prisma.tokenLedger.findMany({
-    where: { userId },
-    select: { deltaMicro: true },
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { balanceMicro: true },
   });
-  return rows.reduce((s, r) => s + r.deltaMicro, 0n);
+  return user?.balanceMicro ?? 0n;
 }

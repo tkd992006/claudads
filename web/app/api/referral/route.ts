@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { appendTokenLedger } from "@/lib/services/ledger";
 
 const REFERRAL_BONUS_MICRO = 5_000_000n;
 
@@ -24,21 +25,19 @@ export async function POST(req: Request) {
       data: { inviterId: inviter.id, inviteeId: userId, granted: true },
     });
     await tx.user.update({ where: { id: userId }, data: { inviterId: inviter.id } });
-    await tx.tokenLedger.create({
-      data: {
-        userId: inviter.id,
-        deltaMicro: REFERRAL_BONUS_MICRO,
-        reason: "REFERRAL",
-        refId: userId,
-      },
+    // C2: 레퍼럴 보너스 — inviter
+    await appendTokenLedger(tx, {
+      userId: inviter.id,
+      deltaMicro: REFERRAL_BONUS_MICRO,
+      reason: "REFERRAL",
+      refId: userId,
     });
-    await tx.tokenLedger.create({
-      data: {
-        userId,
-        deltaMicro: REFERRAL_BONUS_MICRO,
-        reason: "REFERRAL",
-        refId: inviter.id,
-      },
+    // C2: 레퍼럴 보너스 — invitee
+    await appendTokenLedger(tx, {
+      userId,
+      deltaMicro: REFERRAL_BONUS_MICRO,
+      reason: "REFERRAL",
+      refId: inviter.id,
     });
   });
   return NextResponse.json({ ok: true });

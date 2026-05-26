@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>직접 테스트 런북 — flaude-2</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#30363d;
+    --txt:#e6edf3; --muted:#8b949e; --dim:#6e7681;
+    --green:#3fb950; --greenbg:#12321c; --red:#f85149; --redbg:#2d1416;
+    --amber:#d29922; --amberbg:#2e2410; --blue:#58a6ff; --mono:#79c0ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.65;padding:44px 20px 90px;font-size:15px;
+  }
+  .wrap{max-width:880px;margin:0 auto}
+  h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:14px;margin-top:6px}
+  h2{font-size:18px;font-weight:700;margin:38px 0 4px;display:flex;align-items:center;gap:10px}
+  h2 .n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;
+    background:var(--panel2);color:var(--blue);font-size:13px;font-weight:700;border:1px solid var(--border)}
+  .h2sub{color:var(--muted);font-size:13px;margin:0 0 14px 36px}
+  code{background:#0b0f14;border:1px solid var(--border);border-radius:5px;
+    padding:1px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:12.5px;color:var(--mono)}
+
+  .box{border-radius:10px;padding:14px 16px;margin:16px 0;font-size:13.5px;border:1px solid var(--border)}
+  .box .t{font-weight:700;display:block;margin-bottom:5px}
+  .box.info{background:#0e1a2b;border-color:#1f3a5a}
+  .box.info .t{color:var(--blue)}
+  .box.done{background:var(--greenbg);border-color:#1f5b30}
+  .box.done .t{color:var(--green)}
+  .box.warn{background:var(--amberbg);border-color:#4a3a12}
+  .box.warn .t{color:var(--amber)}
+  .box ul{margin:4px 0 0 18px}.box li{padding:2px 0}
+
+  .step{display:block;background:var(--panel);border:1px solid var(--border);
+    border-radius:10px;padding:13px 15px 13px 46px;margin:9px 0;position:relative;cursor:pointer;
+    transition:border-color .12s,background .12s}
+  .step:hover{border-color:#3d4753}
+  .step input{position:absolute;left:14px;top:15px;width:18px;height:18px;cursor:pointer;accent-color:var(--green)}
+  .step .id{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--dim);
+    font-weight:700;letter-spacing:.04em}
+  .step .ttl{font-weight:600;font-size:14.5px;margin:1px 0 6px}
+  .step.checked{background:#10210f;border-color:#1f5b30}
+  .step.checked .ttl{color:var(--muted);text-decoration:line-through}
+  .step .ln{display:flex;gap:8px;font-size:13px;padding:2px 0}
+  .step .ln .k{flex:0 0 60px;color:var(--dim);font-weight:600}
+  .step .ln.do .k{color:var(--blue)}
+  .step .ln.exp .k{color:var(--green)}
+  .step .ln.fix .k{color:var(--amber)}
+  .step .ln .v{flex:1;color:var(--txt)}
+  .step .v.muted{color:var(--muted)}
+
+  .grp{border-left:2px solid var(--border);margin-left:13px;padding-left:18px}
+
+  .prog{position:fixed;left:0;right:0;bottom:0;background:#0b0f14ee;
+    border-top:1px solid var(--border);backdrop-filter:blur(8px);
+    padding:10px 20px;font-size:13px;display:flex;align-items:center;gap:14px;z-index:20}
+  .prog .bar{flex:1;height:7px;background:var(--panel2);border-radius:99px;overflow:hidden}
+  .prog .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2ea043,#3fb950);
+    transition:width .25s}
+  .prog .cnt{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-weight:700}
+  .prog button{background:var(--panel2);color:var(--muted);border:1px solid var(--border);
+    border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer}
+  .prog button:hover{color:var(--txt)}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);
+    color:var(--dim);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>직접 테스트 런북 — flaude-2</h1>
+  <div class="sub">손으로 직접 돌려봐야 하는 것만. 목표: <b>"결제 모듈 빼고 다 완성됐다"</b>를 사실로 확인.</div>
+
+  <div class="box done">
+    <span class="t">이미 끝난 것 — 다시 안 해도 됨</span>
+    프로덕션 빌드(web · desktop) 통과 · 단위 테스트 14개 통과 · React 19/18 호이스팅 버그 수정 ·
+    BigInt 500 크래시 수정 · PROMPT_INJECTION 피처 플래그 OFF. 자동으로 검증되는 건 여기 런북에 없음.
+  </div>
+  <div class="box info">
+    <span class="t">진행 방법</span>
+    <ul>
+      <li>위에서 아래로. 각 단계 <b>한다 → 기대</b> 확인 후 체크박스를 누른다.</li>
+      <li>체크 상태는 브라우저에 저장됨 — 새로고침해도 유지(맨 아래 초기화 버튼).</li>
+      <li><b>기대</b>와 다르면 거기서 멈춤 — 그 플로우는 "완성"이 아님. <b>막히면</b> 줄을 먼저 본다.</li>
+      <li>계정: <code>tkd992006</code> = 관리자. 시청자·광고주는 같은 계정으로 겸해도 되고, 더 깔끔하게 보려면 GitHub 계정 2개.</li>
+    </ul>
+  </div>
+
+  <!-- ───────────── 0. 사전 준비 ───────────── -->
+  <h2><span class="n">0</span>사전 준비 — 환경 띄우기</h2>
+  <div class="h2sub">이게 안 되면 아래 전부 의미 없음. 가장 먼저.</div>
+  <div class="grp">
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">P-1 · DB</div>
+      <div class="ttl">PostgreSQL 컨테이너 + 스키마</div>
+      <div class="ln do"><span class="k">한다</span><span class="v"><code>npm run db:up</code> → <code>npm run db:push</code></span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">postgres 컨테이너가 5433 포트로 떠 있고 스키마 반영 완료.</span></div>
+      <div class="ln fix"><span class="k">막히면</span><span class="v muted">Docker Desktop 실행 여부 확인. <code>docker compose ps</code>.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">P-2 · env</div>
+      <div class="ttl">환경변수 채워졌는지</div>
+      <div class="ln do"><span class="k">한다</span><span class="v">루트 <code>.env</code> 에 <code>GITHUB_CLIENT_ID/SECRET</code>, <code>R2_*</code>, <code>ADMIN_GITHUB_LOGINS=tkd992006</code> 확인.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">빈 값 없음. R2 키가 비면 영상 업로드(B-3) 실패함.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">P-3 · 서버</div>
+      <div class="ttl">dev 서버 재시작 (localhost 바인딩 적용)</div>
+      <div class="ln do"><span class="k">한다</span><span class="v"><code>npm run down</code> 후 <code>./scripts/dev.sh</code> 로 다시 기동.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">web 이 <code>http://127.0.0.1:3000</code> 으로 뜸. <code>lsof -iTCP:3000 -sTCP:LISTEN</code> 결과가 <code>*:3000</code> 이 아니라 <code>127.0.0.1:3000</code>.</span></div>
+      <div class="ln fix"><span class="k">막히면</span><span class="v muted">이전 dev 서버 프로세스가 남아 있으면 포트 충돌 — <code>npm run down</code> 으로 확실히 종료.</span></div>
+    </label>
+
+  </div>
+
+  <!-- ───────────── A. 시청자 ───────────── -->
+  <h2><span class="n">A</span>시청자 플로우 — 광고 보고 토큰 적립</h2>
+  <div class="h2sub">제품의 핵심 루프. 여기가 끊기면 "완성"이 아님.</div>
+  <div class="grp">
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">A-1 · 앱 실행</div>
+      <div class="ttl">데스크탑 앱이 뜨고 로그인 화면</div>
+      <div class="ln do"><span class="k">한다</span><span class="v">데스크탑 앱 실행(<code>scripts/dev.sh</code> 가 같이 띄움).</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">Electron 창에 로그인 화면.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">A-2 · 페어링</div>
+      <div class="ttl">디바이스 페어링 + GitHub 로그인</div>
+      <div class="ln do"><span class="k">한다</span><span class="v">앱에서 로그인 시작 → 웹 <code>/device</code> 에서 코드 입력 → GitHub 로그인 → 디바이스 바인딩.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">데스크탑이 자동으로 인증 완료되어 터미널 화면으로 전환.</span></div>
+      <div class="ln fix"><span class="k">막히면</span><span class="v muted">GitHub OAuth 콜백 URL = <code>http://localhost:3000/api/auth/callback/github</code> 인지 확인.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">A-3 · 광고 노출</div>
+      <div class="ttl">Claude 가 일하면 광고가 뜬다</div>
+      <div class="ln do"><span class="k">한다</span><span class="v">터미널에서 Claude 에게 시간이 좀 걸리는 작업을 시킴.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">Claude 가 busy 인 동안 블러 위에 영상 광고 오버레이가 재생.</span></div>
+      <div class="ln fix"><span class="k">막히면</span><span class="v muted">노출할 광고가 있어야 함 — 먼저 B+C 로 광고 1개를 승인 상태로 만들어 두면 확실.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">A-4 · 시청 완료</div>
+      <div class="ttl">광고가 끝나거나 작업이 끝나면 정상 마감</div>
+      <div class="ln do"><span class="k">한다</span><span class="v">광고를 끝까지 보거나, 작업이 끝나 오버레이가 자동으로 닫히게 둠.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v"><code>PATCH /api/ads/impression/[id]</code> 가 <b>200</b> (예전엔 BigInt 때문에 500 — 이번에 수정). 본 만큼 비례 적립.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">A-5 · 잔액</div>
+      <div class="ttl">대시보드에 토큰이 쌓인다</div>
+      <div class="ln do"><span class="k">한다</span><span class="v">웹 <code>/dashboard</code> 접속.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">잔액이 0 이 아니고, A-4 에서 본 광고만큼 늘어 있음.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">A-6 · 출금 요청</div>
+      <div class="ttl">출금 신청이 만들어진다</div>
+      <div class="ln do"><span class="k">한다</span><span class="v">대시보드 출금 폼에서 금액 입력 후 요청.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">출금 요청이 <code>PENDING</code> 으로 생성. 0/음수 금액은 거부됨.</span></div>
+    </label>
+
+  </div>
+
+  <!-- ───────────── B. 광고주 ───────────── -->
+  <h2><span class="n">B</span>광고주 플로우 — 광고 올리기</h2>
+  <div class="h2sub">시청자가 볼 광고를 공급하는 쪽. A-3 전에 해두면 좋음.</div>
+  <div class="grp">
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">B-1 · 계정</div>
+      <div class="ttl">광고주 계정 생성</div>
+      <div class="ln do"><span class="k">한다</span><span class="v">웹 GitHub 로그인 → <code>/advertiser</code> → 계정 없으면 생성 폼 작성.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">광고주 콘솔이 열림.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">B-2 · 충전</div>
+      <div class="ttl">billing 잔액 충전 (mock)</div>
+      <div class="ln do"><span class="k">한다</span><span class="v"><code>/advertiser/billing</code> 에서 충전.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">광고주 잔액 증가. <b>실결제 아님 — mock</b>(결제 모듈은 의도적 제외).</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">B-3 · 광고 등록</div>
+      <div class="ttl">영상 업로드 + 광고 생성</div>
+      <div class="ln do"><span class="k">한다</span><span class="v"><code>/advertiser/ads/new</code> — 짧은 mp4 업로드, 제목·CPM·예산 입력, CTA 타입 <b>링크</b> 선택.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">R2 업로드 성공 → 광고가 <code>PENDING</code> 으로 생성. CTA 타입 선택지에 <b>"프롬프트 주입"이 안 보여야 함</b>(플래그 OFF — 이번 수정분).</span></div>
+      <div class="ln fix"><span class="k">막히면</span><span class="v muted">업로드 실패 시 R2 키(P-2)와 버킷 CORS 확인.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">B-4 · 대기 확인</div>
+      <div class="ttl">검수 대기 목록에 보인다</div>
+      <div class="ln do"><span class="k">한다</span><span class="v"><code>/advertiser</code> 콘솔 새로고침.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">방금 만든 광고가 "검수 대기" 상태로 표시.</span></div>
+    </label>
+
+  </div>
+
+  <!-- ───────────── C. 운영 ───────────── -->
+  <h2><span class="n">C</span>운영(관리자) 플로우 — 검수 · 정산</h2>
+  <div class="h2sub"><code>tkd992006</code> 계정으로. 광고 노출(A-3)과 출금(A-6)을 닫아주는 쪽.</div>
+  <div class="grp">
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">C-1 · 광고 검수</div>
+      <div class="ttl">광고 승인 → 노출 가능</div>
+      <div class="ln do"><span class="k">한다</span><span class="v"><code>/admin/ads</code> 에서 B-3 광고를 승인.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">상태 <code>APPROVED</code>. 이제 A-3 에서 노출 대상이 됨.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">C-2 · 출금 처리</div>
+      <div class="ttl">출금 승인 → 지급</div>
+      <div class="ln do"><span class="k">한다</span><span class="v"><code>/admin/withdrawals</code> 에서 A-6 요청을 승인 후 지급(paid)으로 전이.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">상태 <code>PENDING → APPROVED → PAID</code>. 응답이 <b>500 아님</b>(금액 BigInt 직렬화 수정분). 실지급은 mock.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">C-3 · 유저 관리</div>
+      <div class="ttl">유저 ban 토글</div>
+      <div class="ln do"><span class="k">한다</span><span class="v"><code>/admin/users</code> 에서 임의 유저 ban 을 켰다 끔.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">토글이 즉시 반영.</span></div>
+    </label>
+
+  </div>
+
+  <!-- ───────────── D. 멀티 인스턴스 ───────────── -->
+  <h2><span class="n">D</span>멀티 인스턴스 — 동시 사용 보상</h2>
+  <div class="h2sub">여러 개 띄우는 건 <b>장려</b>. 막는 게 아니라, 보상이 sub-linear 인지만 확인.</div>
+  <div class="grp">
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">D-1 · 2개 실행</div>
+      <div class="ttl">데스크탑 인스턴스 2개 동시 기동</div>
+      <div class="ln do"><span class="k">한다</span><span class="v"><code>./scripts/dev.sh 2</code> — 같은 계정으로 2개.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">둘 다 정상 동작, 각자 광고를 받음.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">D-2 · 합산 보상</div>
+      <div class="ttl">2개일 때 합산이 1개의 ~1.5배</div>
+      <div class="ln do"><span class="k">한다</span><span class="v">둘 다 동시에 광고를 보게 하고 적립 합계를 본다.</span></div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">합산 적립이 1개일 때의 약 1.5배 수준(2배 아님). 막히지 않고 적립은 됨.</span></div>
+    </label>
+
+  </div>
+
+  <!-- ───────────── R. 회귀 ───────────── -->
+  <h2><span class="n">R</span>회귀 체크 — 이번에 고친 것 재확인</h2>
+  <div class="h2sub">위 플로우 중에 자연히 지나가지만, 콕 집어 확인.</div>
+  <div class="grp">
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">R-1</div>
+      <div class="ttl">광고 시청 완료가 500 을 안 낸다</div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">A-4 의 <code>impression</code> · C-2 의 <code>withdrawal</code> 응답 모두 200. (BigInt 직렬화)</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">R-2</div>
+      <div class="ttl">광고 생성 폼에 PROMPT_INJECTION 옵션이 없다</div>
+      <div class="ln exp"><span class="k">기대</span><span class="v">B-3 의 CTA 타입에 "프롬프트 주입" 선택지 자체가 안 보임.</span></div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox">
+      <div class="id">R-3</div>
+      <div class="ttl">web 서버가 외부에 안 열려 있다</div>
+      <div class="ln exp"><span class="k">기대</span><span class="v"><code>lsof -iTCP:3000 -sTCP:LISTEN</code> → <code>127.0.0.1:3000</code> (<code>*:3000</code> 아님).</span></div>
+    </label>
+
+  </div>
+
+  <div class="box warn">
+    <span class="t">오늘 확인 안 함 — "이건 다음"</span>
+    <ul>
+      <li><b>결제 모듈</b> — billing 실연동 · 출금 실지급. 지금은 mock, 의도적 제외.</li>
+      <li>serve rate limit(429) 부하 테스트, IP 리스크 스코어링 — 런칭 후.</li>
+    </ul>
+  </div>
+
+  <div class="box done">
+    <span class="t">완료 판정</span>
+    <b>0 · A · B · C</b> 가 전부 ✅ 이고 <b>R-1~R-3</b> 가 ✅ 이면 —
+    "결제 모듈을 제외한 제품은 완성됐다"고 말할 수 있다. D 는 보너스(권장 동작 확인).
+  </div>
+
+  <footer>
+    flaude-2 직접 테스트 런북 · 작성 2026-05-22 · 자동 검증(빌드·단위테스트)은 통과 완료, 본 문서는 수동 확인분만.
+  </footer>
+
+</div>
+
+<div class="prog">
+  <span class="cnt" id="cnt">0 / 0</span>
+  <div class="bar"><i id="barfill"></i></div>
+  <button id="reset">초기화</button>
+</div>
+
+<script>
+  (function(){
+    var KEY="flaude2-runbook-v1";
+    var steps=[].slice.call(document.querySelectorAll(".step input"));
+    var saved={};
+    try{saved=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+    function render(){
+      var done=0;
+      steps.forEach(function(cb){
+        var card=cb.closest(".step");
+        if(cb.checked){done++;card.classList.add("checked")}
+        else{card.classList.remove("checked")}
+      });
+      document.getElementById("cnt").textContent=done+" / "+steps.length;
+      document.getElementById("barfill").style.width=
+        (steps.length?Math.round(done/steps.length*100):0)+"%";
+    }
+    steps.forEach(function(cb,i){
+      cb.checked=!!saved[i];
+      cb.addEventListener("change",function(){
+        saved[i]=cb.checked;
+        try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){}
+        render();
+      });
+    });
+    document.getElementById("reset").addEventListener("click",function(){
+      saved={};try{localStorage.removeItem(KEY)}catch(e){}
+      steps.forEach(function(cb){cb.checked=false});
+      render();
+    });
+    render();
+  })();
+</script>
+</body>
+</html>

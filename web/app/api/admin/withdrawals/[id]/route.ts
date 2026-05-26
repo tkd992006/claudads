@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { appendTokenLedger } from "@/lib/services/ledger";
 
 export async function PATCH(
   req: Request,
@@ -16,19 +17,23 @@ export async function PATCH(
     // 거절: 금액을 다시 적립 (REJECTED ledger entry)
     return prisma.$transaction(async (tx) => {
       const w = await tx.withdrawal.findUnique({ where: { id } });
-      if (!w || w.status === "PAID")
-        return NextResponse.json({ error: "invalid" }, { status: 400 });
+      // C4: REQUESTED 또는 APPROVED 상태에서만 거절 가능.
+      // REJECTED/PAID 상태에서 재거절하면 환불이 이중으로 쌓이므로 차단.
+      if (!w || !["REQUESTED", "APPROVED"].includes(w.status))
+        return NextResponse.json(
+          { error: "invalid_state", detail: "can only reject REQUESTED or APPROVED withdrawals" },
+          { status: 409 },
+        );
       await tx.withdrawal.update({
         where: { id },
         data: { status: "REJECTED" },
       });
-      await tx.tokenLedger.create({
-        data: {
-          userId: w.userId,
-          deltaMicro: w.amountMicro,
-          reason: "ADJUSTMENT",
-          refId: w.id,
-        },
+      // C2: 환불 원장 기록 + user.balanceMicro 복원
+      await appendTokenLedger(tx, {
+        userId: w.userId,
+        deltaMicro: w.amountMicro,
+        reason: "ADJUSTMENT",
+        refId: w.id,
       });
       return NextResponse.json({ ok: true });
     });

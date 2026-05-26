@@ -33,6 +33,13 @@ enum LedgerReason {
   ADJUSTMENT
 }
 
+enum AdvLedgerReason {
+  CHARGE
+  IMPRESSION
+  CTA
+  ADJUSTMENT
+}
+
 enum WithdrawalStatus {
   REQUESTED
   APPROVED
@@ -41,15 +48,16 @@ enum WithdrawalStatus {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  githubId    String   @unique
-  login       String
-  email       String?
-  avatarUrl   String?
-  role        Role     @default(VIEWER)
-  banned      Boolean  @default(false)
-  inviterId   String?
-  createdAt   DateTime @default(now())
+  id             String   @id @default(cuid())
+  githubId       String   @unique
+  login          String
+  email          String?
+  avatarUrl      String?
+  role           Role     @default(VIEWER)
+  banned         Boolean  @default(false)
+  inviterId      String?
+  balanceMicro   BigInt   @default(0)
+  createdAt      DateTime @default(now())
 
   advertiser   AdvertiserAccount?
   ledger       TokenLedger[]
@@ -67,6 +75,19 @@ model AdvertiserAccount {
   name         String
   balanceCents Int    @default(0)
   ads          Ad[]
+  advLedger    AdvertiserLedger[]
+}
+
+model AdvertiserLedger {
+  id           String           @id @default(cuid())
+  advertiserId String
+  advertiser   AdvertiserAccount @relation(fields: [advertiserId], references: [id])
+  deltaCents   Int
+  reason       AdvLedgerReason
+  refId        String?
+  createdAt    DateTime         @default(now())
+
+  @@index([advertiserId, createdAt])
 }
 
 model Ad {
