@@ -28,15 +28,20 @@ export function startHookServer(
       }
     };
 
-    const sessionId = (body: string): string => {
-      if (!body) return "default";
+    // hook JSON(stdin)에서 세션 식별자와 어떤 hook 이 보냈는지를 함께 뽑는다.
+    const parseHook = (body: string): { sid: string; event: string } => {
       try {
-        const j = JSON.parse(body);
-        if (j && typeof j.session_id === "string" && j.session_id) {
-          return j.session_id;
-        }
-      } catch {}
-      return "default";
+        const j = JSON.parse(body || "{}");
+        const sid =
+          j && typeof j.session_id === "string" && j.session_id
+            ? j.session_id
+            : "default";
+        const event =
+          j && typeof j.hook_event_name === "string" ? j.hook_event_name : "";
+        return { sid, event };
+      } catch {
+        return { sid: "default", event: "" };
+      }
     };
 
     const server = http.createServer((req, res) => {
@@ -49,10 +54,24 @@ export function startHookServer(
       req.on("data", (c) => (body += c));
       req.on("end", () => {
         try {
-          const sid = sessionId(body);
-          if (req.url === "/busy") busy.set(sid, Date.now());
-          else if (req.url === "/idle") busy.delete(sid);
-          emit();
+          const { sid, event } = parseHook(body);
+          if (req.url === "/busy") {
+            busy.set(sid, Date.now());
+            // UserPromptSubmit 은 "새 턴 시작" 이다. 직전 턴을 ESC 로 끊으면
+            // Stop hook 이 발화하지 않아 세션이 busy 인 채로 남는다. 그 상태에서
+            // 다시 질문하면 busy.size 가 그대로라 emit 의 transition 검사가
+            // 신호를 삼켜 광고가 다시 뜨지 않는다. 그래서 프롬프트 제출만은
+            // 현재 상태와 무관하게 강제로 busy 를 통지한다.
+            if (event === "UserPromptSubmit") {
+              lastEmitted = true;
+              onState(true);
+            } else {
+              emit();
+            }
+          } else if (req.url === "/idle") {
+            busy.delete(sid);
+            emit();
+          }
         } catch {}
         res.writeHead(200, { "content-type": "application/json" });
         res.end("{}");
