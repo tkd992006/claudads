@@ -1,0 +1,48 @@
+# Docker 빌드 컨텍스트에서 제외 — 이미지 작게, 빌드 빠르게, 시크릿 유출 방지.
+
+# 의존성/빌드 결과
+**/node_modules
+**/.next
+**/dist
+**/out
+**/.turbo
+**/*.tsbuildinfo
+
+# 시크릿 (예시 파일만 허용)
+.env
+.env.*
+!.env.example
+
+# VCS / 에디터 / OS
+.git
+.gitignore
+.gitattributes
+.github
+.vscode
+.idea
+**/.DS_Store
+
+# 로그/캐시
+**/*.log
+.dev-logs
+.gstack/
+
+# Desktop 워크스페이스 — package.json 만 Dockerfile 에서 명시적으로 COPY 한다.
+# 나머지 (src/native binaries/release zip) 는 web 이미지에 불필요.
+desktop/src
+desktop/out
+desktop/release
+desktop/build
+desktop/electron.vite.config.ts
+desktop/electron-builder.yml
+desktop/tsconfig.json
+desktop/postcss.config.mjs
+
+# 로컬 DB / 마이그레이션 캐시
+docker-compose.yml
+prisma/migrations/dev.db*
+
+# 문서 / 스크래치
+docs
+scripts
+README.md
