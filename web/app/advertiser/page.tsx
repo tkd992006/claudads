@@ -5,9 +5,10 @@ import { prisma } from "@/lib/prisma";
 import CreateAccount from "./create-account";
 
 export default async function AdvertiserHome() {
+  // 빈 session 객체가 와도 userId 가 undefined 면 prisma 호출 전에 차단.
   const s = await auth();
-  if (!s) redirect("/api/auth/signin?callbackUrl=/advertiser");
-  const userId = (s as { userId?: string }).userId!;
+  const userId = (s as { userId?: string } | null)?.userId;
+  if (!userId) redirect("/api/auth/signin?callbackUrl=/advertiser");
 
   const acc = await prisma.advertiserAccount.findUnique({
     where: { userId },

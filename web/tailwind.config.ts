@@ -25,12 +25,12 @@ const config = {
     themes: [
       {
         terminal: {
-          primary: "#10b981",
-          "primary-content": "#03150d",
-          secondary: "#22d3ee",
-          "secondary-content": "#04181c",
-          accent: "#34d399",
-          "accent-content": "#03150d",
+          primary: "#f59e0b",
+          "primary-content": "#1a0f00",
+          secondary: "#fb923c",
+          "secondary-content": "#1a0a00",
+          accent: "#fbbf24",
+          "accent-content": "#1a0f00",
           neutral: "#1c1c20",
           "neutral-content": "#e4e4e7",
           "base-100": "#0a0a0c",
@@ -38,7 +38,7 @@ const config = {
           "base-300": "#272729",
           "base-content": "#ededed",
           info: "#38bdf8",
-          success: "#10b981",
+          success: "#34d399",
           warning: "#f5b50a",
           error: "#f0506b",
           "--rounded-box": "0.85rem",

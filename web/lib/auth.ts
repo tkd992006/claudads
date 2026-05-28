@@ -14,6 +14,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
     }),
   ],
+  // Vercel 외 호스팅(Railway 등) 에선 Auth.js 가 기본적으로 host 를 거절한다.
+  // env(AUTH_TRUST_HOST=true) 가 없으면 /api/auth/session 이 UntrustedHost 로
+  // 떨어지고, 그 결과 session 이 빈 객체로 반환돼 서버 컴포넌트에서 500 으로
+  // 번진다. 환경변수 누락 시에도 안전하도록 코드에서 항상 신뢰.
+  trustHost: true,
   session: { strategy: "jwt" },
   callbacks: {
     async signIn({ profile }) {

@@ -37,14 +37,49 @@ export default function ReferralSection({
     }
   };
 
+  // 카드 헤더 우측에 표시할 카운트다운/만료 상태 badge.
+  // 활성: 초록 outline / 만료: 회색 ghost / 추천인 없음: 안내 라벨.
+  const daysLeft =
+    remainingMs != null && remainingMs > 0
+      ? Math.ceil(remainingMs / (24 * 60 * 60 * 1000))
+      : null;
+
   return (
     <section className="card surface border border-white/[0.08] bg-base-200">
       <div className="card-body gap-4 p-5">
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h2 className="font-semibold">레퍼럴</h2>
-          <span className="text-xs text-neutral-500">
-            양방향 5% · 60일 이벤트
-          </span>
+          {inviter && daysLeft != null ? (
+            <span className="badge badge-sm badge-outline badge-success">
+              {daysLeft}일 남음
+            </span>
+          ) : inviter ? (
+            <span className="badge badge-sm badge-ghost">보너스 만료</span>
+          ) : (
+            <span className="text-xs text-neutral-500">
+              양방향 5% · 60일 이벤트
+            </span>
+          )}
+        </div>
+
+        {/* Hero stat — 누적 커미션이 이 카드의 주인공 */}
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-neutral-500">
+            누적 커미션 µ
+          </p>
+          <p className="mt-1 font-mono text-3xl font-semibold tracking-tight">
+            {fmt(commissionMicro)}
+            <span className="ml-1.5 text-base text-neutral-500">µ</span>
+          </p>
+          <p className="mt-1 text-xs text-neutral-500">
+            초대 {inviteesCount}명
+            {inviter && (
+              <>
+                <span className="mx-1.5 text-neutral-700">·</span>
+                추천인 @{inviter.login}
+              </>
+            )}
+          </p>
         </div>
 
         {/* 내 추천 링크 */}
@@ -67,27 +102,6 @@ export default function ReferralSection({
           </div>
         </div>
 
-        {/* 통계 */}
-        <div className="grid grid-cols-3 gap-2">
-          <Stat label="초대한 사람" value={inviteesCount.toString()} />
-          <Stat label="누적 커미션 µ" value={commissionMicro} mono />
-          <Stat
-            label="내 추천인"
-            value={inviter ? `@${inviter.login}` : "없음"}
-          />
-        </div>
-
-        {/* 추천 관계 상태 */}
-        {inviter && remainingMs != null && remainingMs > 0 && (
-          <p className="text-xs text-emerald-400/80">
-            추천 보너스 활성 — {Math.ceil(remainingMs / (24 * 60 * 60 * 1000))}
-            일 남음
-          </p>
-        )}
-        {inviter && (remainingMs == null || remainingMs <= 0) && (
-          <p className="text-xs text-neutral-500">추천 보너스 기간이 끝났습니다.</p>
-        )}
-
         {/* 추천인 매뉴얼 입력 (아직 없을 때만) */}
         {!inviter && <ManualInviterForm />}
       </div>
@@ -95,27 +109,11 @@ export default function ReferralSection({
   );
 }
 
-function Stat({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className="rounded-lg border border-white/[0.06] bg-base-100/40 p-3">
-      <p className="text-[10px] uppercase tracking-wider text-neutral-500">
-        {label}
-      </p>
-      <p
-        className={`mt-1 text-sm ${mono ? "font-mono" : "font-medium"} truncate`}
-      >
-        {value}
-      </p>
-    </div>
-  );
+// 큰 µ 숫자에 천 단위 콤마. BigInt 문자열 그대로 안전하게 처리.
+function fmt(s: string): string {
+  const neg = s.startsWith("-");
+  const digits = neg ? s.slice(1) : s;
+  return (neg ? "-" : "") + digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 function ManualInviterForm() {

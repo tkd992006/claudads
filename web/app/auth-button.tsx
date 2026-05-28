@@ -25,7 +25,7 @@ export default function AuthButton() {
   return (
     <div className="flex items-center gap-3">
       <span className="flex items-center gap-2 text-xs text-neutral-400">
-        <span className="grid h-6 w-6 place-items-center rounded-full bg-emerald-500/15 text-[10px] font-semibold text-emerald-300 ring-1 ring-emerald-500/20">
+        <span className="grid h-6 w-6 place-items-center rounded-full bg-amber-500/15 text-[10px] font-semibold text-amber-300 ring-1 ring-amber-500/25">
           {login.slice(0, 2).toUpperCase()}
         </span>
         <span className="hidden sm:inline">@{login}</span>

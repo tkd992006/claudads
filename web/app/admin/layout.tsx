@@ -7,8 +7,11 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // 빈 session 객체 방어 — userId 가 있어야 로그인된 것으로 간주.
   const s = await auth();
-  if (!s) redirect("/api/auth/signin?callbackUrl=/admin");
+  if (!(s as { userId?: string } | null)?.userId) {
+    redirect("/api/auth/signin?callbackUrl=/admin");
+  }
   if ((s as { role?: string }).role !== "ADMIN") {
     return (
       <main className="mx-auto max-w-md px-6 py-24">

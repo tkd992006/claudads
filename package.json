@@ -14,7 +14,9 @@
     "db:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.ts",
     "web": "npm -w web run dev",
-    "desktop": "npm -w desktop run dev"
+    "desktop": "npm -w desktop run dev",
+    "release:upload": "node scripts/upload-release.mjs",
+    "ship:mac": "bash scripts/ship-mac.sh"
   },
   "devDependencies": {
     "prisma": "^5.22.0",

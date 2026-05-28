@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hardened Runtime 권한 — notarization 통과 + Electron 동작에 필요한 최소셋.
+  - allow-jit / unsigned-executable-memory : V8 JIT.
+  - allow-dyld-environment-variables       : Electron 런타임이 DYLD_* 일부 사용.
+  - disable-library-validation             : node-pty 등 외부 서명된 .node 로드 허용.
+  - inherit                                : 자식 프로세스(PTY 셸 등) 가 이 권한 상속.
+  더 좁히고 싶으면 disable-library-validation 부터 떼고 노타리제이션 다시 돌려 보면 됨.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+  <key>com.apple.security.inherit</key>
+  <true/>
+</dict>
+</plist>

@@ -5,8 +5,9 @@ import Providers from "./providers";
 import AuthButton from "./auth-button";
 
 export const metadata: Metadata = {
-  title: "Claude Ad Terminal",
-  description: "터미널이 일하는 시간, 가만 두지 마세요.",
+  title: "ClaudeShift — 클로드 코드에게 야간근무를 시키세요",
+  description:
+    "Claude 가 busy 인 동안 터미널 위로 짧은 광고가 흐르고, 흘러간 시간이 야근비로 적립되는 데스크탑 앱.",
 };
 
 export default function RootLayout({
@@ -22,11 +23,11 @@ export default function RootLayout({
             <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
               <Link href="/" className="group flex items-center gap-2.5">
                 <span className="relative flex h-2.5 w-2.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-400" />
                 </span>
                 <span className="text-sm font-semibold tracking-tight text-neutral-100 transition-colors group-hover:text-white">
-                  Claude Ad Terminal
+                  Claude<span className="text-amber-300">Shift</span>
                 </span>
               </Link>
               <AuthButton />
@@ -37,8 +38,10 @@ export default function RootLayout({
 
           <footer className="border-t border-white/[0.06] py-6">
             <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-6 text-xs text-neutral-600">
-              <span>© 2026 Claude Ad Terminal</span>
-              <span>터미널이 일하는 시간, 가만 두지 마세요.</span>
+              <span>© 2026 ClaudeShift</span>
+              <span className="font-mono uppercase tracking-[0.2em] text-neutral-500">
+                put claude on the night shift
+              </span>
             </div>
           </footer>
         </Providers>

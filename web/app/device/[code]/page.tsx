@@ -11,11 +11,11 @@ export default async function DeviceLink({
   const normalized = code.toUpperCase();
 
   const sess = await auth();
-  if (!sess) {
+  const userId = (sess as { userId?: string } | null)?.userId;
+  if (!userId) {
     // 로그인 안 되어 있으면 자동으로 GitHub OAuth 로. 끝나면 이 페이지로 복귀.
     return <AutoSignIn callbackUrl={`/device/${normalized}`} />;
   }
-  const userId = (sess as { userId?: string }).userId!;
 
   const ds = await prisma.deviceSession.findUnique({
     where: { userCode: normalized },
