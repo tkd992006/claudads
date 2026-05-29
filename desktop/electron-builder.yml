@@ -1,5 +1,5 @@
-appId: app.claudead.desktop
-productName: Claude Ad Terminal
+appId: app.claudeshift.desktop
+productName: ClaudeShift
 # npm workspaces 가 electron 을 루트 node_modules 로 hoist 해서 electron-builder
 # 가 desktop/node_modules 에서 못 찾는다 → 버전을 명시해서 우회.
 # package.json 의 ^33.2.0 과 일치시키되 실제 설치된 33.4.11 을 박는다.
@@ -13,7 +13,7 @@ files:
 
 # 다운로드 URL 안정화 — `releases/latest/download/<artifactName>` 로 마케팅
 # 페이지를 박아둘 수 있게 OS·arch 기반 고정 패턴 사용.
-# 예: Claude-Ad-Terminal-0.1.0-mac-x64.dmg
+# 예: ClaudeShift-0.1.0-mac-x64.dmg
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 
 mac:

@@ -13,7 +13,11 @@ async function jsonReq(
       "content-type": "application/json",
     },
   });
-  return r.json().catch(() => ({}));
+  const body = await r.json().catch(() => ({}));
+  // 401 은 서버가 토큰을 무효로 본 것 — 로컬 토큰이 있어도 OAuth 는 깨진 상태.
+  // 렌더러가 이걸 보고 즉시 로그아웃 처리할 수 있게 표식을 남긴다.
+  if (r.status === 401) return { ...body, __unauthorized: true };
+  return body;
 }
 
 export function fetchAd(token: string, deviceId: string) {

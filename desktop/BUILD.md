@@ -30,8 +30,8 @@ npm -w desktop run dist
 
 # 산출물 위치
 ls desktop/release/
-# → Claude-Ad-Terminal-0.1.0-mac-x64.dmg
-# → Claude-Ad-Terminal-0.1.0-mac-x64.dmg.blockmap
+# → ClaudeShift-0.1.0-mac-x64.dmg
+# → ClaudeShift-0.1.0-mac-x64.dmg.blockmap
 # → latest-mac.yml  (자동 업데이트용, 지금은 안 씀)
 ```
 
@@ -43,11 +43,11 @@ ls desktop/release/
 ```bash
 # 서명 정상 여부
 codesign --verify --deep --strict --verbose=2 \
-  desktop/release/mac/Claude\ Ad\ Terminal.app
+  desktop/release/mac/ClaudeShift.app
 
 # 노타리제이션 stapling 확인 (DMG 와 .app 둘 다)
 spctl --assess --type execute --verbose \
-  desktop/release/mac/Claude\ Ad\ Terminal.app
+  desktop/release/mac/ClaudeShift.app
 # → accepted, source=Notarized Developer ID  ← 이거 떠야 정상
 ```
 
@@ -55,12 +55,12 @@ spctl --assess --type execute --verbose \
 
 ```bash
 gh release create v0.1.0 \
-  desktop/release/Claude-Ad-Terminal-*.dmg \
+  desktop/release/ClaudeShift-*.dmg \
   --title "v0.1.0" \
   --notes "첫 공개 빌드"
 
 # 이후 안정 URL:
-# https://github.com/<owner>/<repo>/releases/latest/download/Claude-Ad-Terminal-<ver>-mac-x64.dmg
+# https://github.com/<owner>/<repo>/releases/latest/download/ClaudeShift-<ver>-mac-x64.dmg
 ```
 
 (파일명에 버전이 박혀 있어서 매 릴리즈마다 마케팅 페이지의 다운로드 링크도

@@ -28,9 +28,11 @@ function deviceId() {
 export default function AdOverlay({
   busy,
   onClose,
+  onUnauthorized,
 }: {
   busy: boolean;
   onClose: () => void;
+  onUnauthorized: () => void;
 }) {
   const [ad, setAd] = useState<Ad | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -44,6 +46,12 @@ export default function AdOverlay({
   useEffect(() => {
     (async () => {
       const r = await window.api.fetchAd(deviceId());
+      if (r.__unauthorized) {
+        // 서버가 토큰을 거부 — OAuth 끊김. 광고 닫고 Login 으로 돌려보낸다.
+        onUnauthorized();
+        onClose();
+        return;
+      }
       if (r.error) {
         setErr(r.error);
         setDone(true);
