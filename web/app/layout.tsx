@@ -5,9 +5,9 @@ import Providers from "./providers";
 import AuthButton from "./auth-button";
 
 export const metadata: Metadata = {
-  title: "ClaudeShift — 클로드 코드에게 야간근무를 시키세요",
+  title: "ClaudeShift — 광고 보면서 Claude Code 공짜로 쓰세요",
   description:
-    "Claude 가 busy 인 동안 터미널 위로 짧은 광고가 흐르고, 흘러간 시간이 야근비로 적립되는 데스크탑 앱.",
+    "Claude 가 답 만드는 동안 안 보는 화면 위로만 짧게 광고가 뜨고, 한 달 모이면 구독료를 통째로 덮습니다. macOS 데스크탑 앱.",
 };
 
 export default function RootLayout({
@@ -40,7 +40,7 @@ export default function RootLayout({
             <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-6 text-xs text-neutral-600">
               <span>© 2026 ClaudeShift</span>
               <span className="font-mono uppercase tracking-[0.2em] text-neutral-500">
-                put claude on the night shift
+                ad-supported claude code
               </span>
             </div>
           </footer>

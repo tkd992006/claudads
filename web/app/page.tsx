@@ -3,33 +3,33 @@ import Link from "next/link";
 const STEPS = [
   {
     n: "01",
-    title: "Claude 와 같은 shift 로 출근",
-    body: "GitHub 로 로그인하고 데스크탑 앱을 켭니다. 평소엔 풀스크린 터미널, 그대로입니다.",
+    title: "Claude 한테 시켜놓고 자리 비우세요",
+    body: "GitHub 로그인하고 데스크탑 앱 켜기. 평소처럼 작업 던지고, 답 나올 동안 커피 뽑으러 가든 다른 PR 보든 마음대로.",
   },
   {
     n: "02",
-    title: "Claude 에게 야간근무를 시킨다",
-    body: "코드를 짜라고 시키세요. Claude 가 busy 인 순간에만 짧은 광고가 터미널 위로 덮입니다.",
+    title: "안 보는 화면을 광고가 채웁니다",
+    body: "Claude 가 코드 짜는 동안 어차피 안 보고 있잖아요. 그 시간 위로만 짧은 광고가 뜨고, 흘러간 만큼 잔고에 박힙니다.",
   },
   {
     n: "03",
-    title: "야근비는 자동으로",
-    body: "광고 노출마다 토큰이 적립됩니다. 잔고가 차면 대시보드에서 바로 출금하세요.",
+    title: "다시 자리에 오면 깨끗하게 사라집니다",
+    body: "Claude 가 입력 받을 차례가 되는 순간 광고는 바로 걷힙니다. 잔고만 남고, 작업 흐름은 그대로.",
   },
 ];
 
 const PROMISES = [
   {
-    title: "작업 흐름은 끊지 않는다",
-    body: "Claude 가 입력 받을 차례 (idle) 가 되면 광고는 즉시 사라집니다. 키 입력을 가로막지 않습니다.",
+    title: "작업은 1초도 안 끊김",
+    body: "Claude 가 idle 로 돌아오면 광고는 즉시 사라집니다. 키 입력을 가로막는 일 없음.",
   },
   {
-    title: "키 입력은 수집하지 않는다",
-    body: "광고 노출과 CTA 클릭 외엔 기록 0. 코드도, 프롬프트도, 파일명도 보내지 않습니다.",
+    title: "코드·프롬프트는 안 봅니다",
+    body: "광고 노출이랑 클릭 외엔 서버로 가는 게 없어요. 파일명도, 키 입력도, 화면 캡처도 안 합니다.",
   },
   {
-    title: "100% 개발자 청중",
-    body: "모든 시청자가 Claude Code 사용자. 일반 광고망과 다른, 좁고 정확한 인벤토리.",
+    title: "전부 진짜 개발자",
+    body: "Claude Code 켜놓고 일하는 사람들만 봅니다. 일반 광고망이랑 트래픽 질이 다른 인벤토리.",
   },
 ];
 
@@ -40,22 +40,23 @@ export default function Landing() {
       <section className="flex animate-fade-up flex-col items-center pb-14 pt-20 text-center">
         <span className="badge badge-lg gap-2 border-amber-500/25 bg-amber-500/10 text-amber-300">
           <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-          Claude Code × Night Shift
+          Claude Code · 광고로 무료
         </span>
         <h1 className="mt-6 max-w-3xl text-balance text-4xl font-semibold leading-[1.12] sm:text-6xl">
-          클로드 코드에게
+          광고 보면서
+          <br />
+          Claude Code,
           <br />
           <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-orange-300 bg-clip-text text-transparent">
-            야간근무
+            공짜로 쓰세요.
           </span>
-          를 시키세요.
         </h1>
         <p className="mt-5 max-w-xl text-balance text-neutral-400 sm:text-lg">
-          Claude 가 busy 인 동안 터미널 위로 짧은 광고가 흐르고, 흘러간 시간이
-          야근비로 적립됩니다.
+          Claude 가 답 만드는 동안 어차피 화면 안 보잖아요. 그 시간 위로만 짧게
+          광고 뜨고, 한 달 모이면 구독료 정도는 가뿐히 덮입니다.
         </p>
         <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.32em] text-amber-400/70">
-          put claude on the night shift · get paid while it codes
+          ad-supported claude code
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link href="/download" className="btn btn-primary">
@@ -77,17 +78,17 @@ export default function Landing() {
         <BusyTerminalCard />
       </section>
       <p className="mt-3 text-center text-xs text-neutral-600">
-        평소엔 풀스크린 터미널 · Claude 가 야간근무 중일 때만 광고가 덮습니다
+        보고 있을 땐 평소 터미널 · 자리 비우면 그 위로 광고
       </p>
 
       {/* How it works */}
       <section className="mt-24">
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-semibold sm:text-3xl">
-            출근부터 정산까지, 세 단계
+            구독료를 매달 광고가 대신 냅니다
           </h2>
           <p className="mt-2 text-sm text-neutral-500">
-            처음 켜는 순간부터 야근비가 쌓이기 시작합니다
+            하던 대로 Claude 만 돌리면, 안 보는 시간이 그대로 구독료로 회수됩니다
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -115,7 +116,7 @@ export default function Landing() {
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-semibold sm:text-3xl">세 가지 약속</h2>
           <p className="mt-2 text-sm text-neutral-500">
-            야근시키는 건 Claude, 보호받는 건 당신
+            돈은 받되, 흐름이랑 프라이버시는 안 건드립니다
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -142,15 +143,15 @@ export default function Landing() {
       <section className="mt-20 grid gap-4 md:grid-cols-2">
         <RoleCard
           icon={<TerminalIcon />}
-          title="시청자 (개발자)"
-          body="앱을 켜두고 평소처럼 Claude 를 시키세요. Claude busy 시간이 그대로 야근비가 됩니다."
+          title="개발자"
+          body="앱 켜두고 평소대로 Claude 돌리세요. 자리 비우는 시간이 그대로 잔고가 됩니다."
           href="/dashboard"
           cta="대시보드 열기"
         />
         <RoleCard
           icon={<MegaphoneIcon />}
           title="광고주"
-          body="개발자의 night shift 를 통째로 삽니다. 영상 한 편, 예산, CPM 만 설정하면 끝."
+          body="개발자가 가장 집중해서 다음 답을 기다리는 그 순간. 일반 디스플레이로는 못 사는 인벤토리를 통째로 살 수 있어요."
           href="/advertiser"
           cta="광고주 콘솔 열기"
         />
@@ -159,17 +160,17 @@ export default function Landing() {
       {/* Final CTA */}
       <section className="mt-24 overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/[0.08] via-orange-500/[0.04] to-transparent p-10 text-center">
         <p className="font-mono text-[11px] uppercase tracking-[0.32em] text-amber-400/70">
-          03:14 AM · claude busy · ₩+240
+          이번 달 구독료 · ₩-26,400 → ₩0
         </p>
         <h2 className="mt-4 text-balance text-2xl font-semibold sm:text-3xl">
-          야근비는 ClaudeShift 가 챙겨드립니다.
+          Claude Code, 다음 결제부터 공짜로 써보세요.
         </h2>
         <p className="mt-3 text-sm text-neutral-400">
-          어차피 깨어 있던 시간. 처음으로 잔고가 같이 깨어 있는 앱.
+          어차피 안 보던 시간만 광고가 메우고, 한 달 합치면 구독료가 사라집니다.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Link href="/download" className="btn btn-primary">
-            지금 출근하기
+            지금 시작하기
             <ArrowRight />
           </Link>
           <Link
@@ -220,7 +221,7 @@ function RoleCard({
 function TerminalCard() {
   return (
     <div className="surface overflow-hidden rounded-xl border border-white/[0.08] bg-[#0b0a08]">
-      <WindowBar label="claude — idle · 11:48 PM" />
+      <WindowBar label="claude — 보는 중 · idle" />
       <div className="space-y-2 p-5 font-mono text-[13px] leading-relaxed">
         <p className="text-neutral-500">
           $ claude{" "}
@@ -243,7 +244,7 @@ function TerminalCard() {
 function BusyTerminalCard() {
   return (
     <div className="overflow-hidden rounded-xl border border-amber-500/30 bg-[#0b0a08] shadow-[0_24px_60px_-30px_rgba(245,158,11,0.55)]">
-      <WindowBar label="claude — night shift · 03:14 AM" accent />
+      <WindowBar label="claude — afk · 생성 중" accent />
       <div className="relative p-5">
         <div className="select-none space-y-2 font-mono text-[13px] leading-relaxed opacity-[0.18] blur-[1.5px]">
           <p>$ claude &quot;리팩토링 해줘&quot;</p>
@@ -257,7 +258,7 @@ function BusyTerminalCard() {
             ad · 0:14 / 0:30
           </span>
           <span className="text-sm text-neutral-200">
-            광고가 터미널 위에 오버레이
+            안 보는 화면 위로 광고
           </span>
           <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1 text-[11px] font-medium text-amber-200 ring-1 ring-amber-400/30">
             +₩240 적립 중
@@ -292,7 +293,7 @@ function WindowBar({ label, accent }: { label: string; accent?: boolean }) {
       {accent && (
         <span className="badge badge-xs ml-auto gap-1 border-0 bg-amber-500/20 text-amber-100">
           <span className="h-1 w-1 animate-pulse rounded-full bg-amber-300" />
-          on shift
+          afk
         </span>
       )}
     </div>

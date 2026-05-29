@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
-// R2 에 업로드된 첫 공개 빌드. 파일명에 공백이 있어서 URL 에선 %20 인코딩.
-// 다음 릴리즈부터는 electron-builder.yml 의 artifactName 을 버전 없는 안정
-// 이름(Claude-Ad-Terminal-mac-x64.dmg)으로 바꿀 예정 — 그때 이 상수도 갱신.
+// R2 에 업로드된 첫 공개 빌드. 0.1.0 은 옛 brand("Claude Ad Terminal") 시절
+// 파일이라 URL 에 %20 이 박혀 있음. productName 을 ClaudeShift 로 바꿨으니
+// 다음 빌드 산출물은 `ClaudeShift-<ver>-mac-x64.dmg` — R2 재업로드 후
+// 아래 URL/버전 상수 갱신할 것.
 const MAC_X64_URL =
   "https://pub-e3a28d684eec406a83af82013952bb1a.r2.dev/releases/Claude%20Ad%20Terminal-0.1.0-mac-x64.dmg";
 const MAC_X64_VERSION = "0.1.0";
@@ -12,7 +13,7 @@ const MAC_X64_SIZE_MB = 103;
 export const metadata: Metadata = {
   title: "데스크탑 앱 받기 · ClaudeShift",
   description:
-    "Claude 가 야간근무 하는 동안 야근비를 자동으로 적립하는 데스크탑 터미널 앱.",
+    "Claude 답 기다리는 동안 안 보는 화면 위로만 광고가 뜨고, 모이면 구독료를 덮어주는 데스크탑 터미널 앱.",
 };
 
 export default function DownloadPage() {
@@ -26,8 +27,8 @@ export default function DownloadPage() {
           데스크탑 앱 받기
         </h1>
         <p className="mt-3 text-sm text-neutral-400">
-          평소엔 풀스크린 터미널. Claude 가 busy 인 순간에만 광고가 덮고,
-          그 시간만큼 야근비가 적립됩니다.
+          평소엔 풀스크린 터미널. Claude 답 기다리는 동안에만 짧게 광고가 뜨고,
+          모이면 구독료를 통째로 덮어줍니다.
         </p>
       </header>
 
